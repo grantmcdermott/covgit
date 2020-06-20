@@ -129,3 +129,41 @@ get_gh_pushes =
     DBI::dbDisconnect(gharchive_con)
     
   }
+
+
+# Difference plot ---------------------------------------------------------
+
+diff_plot = 
+  function(data, start_date, end_date) {
+    start_date = as.Date(start_date)
+    end_date = as.Date(end_date)
+    d = 
+      copy(data) %>%
+      .[, date_offset := date + 365] %>%
+      .[, date_offset := date + 365 + wday(date) - wday(date_offset)] %>%
+      melt(id.vars = 'pushes') %>%
+      .[value >= start_date & value <= end_date] %>%
+      dcast(value ~ variable, value.var = 'pushes') %>%
+      .[, diff := date - date_offset]
+    # ggplot(d, aes(value, diff)) + 
+    #   geom_line() +
+    #   scale_x_date(date_labels = '%b %y') +
+    #   scale_y_continuous(labels = scales::comma) +
+    #   labs(y = 'Difference') +
+    #   theme(axis.title.x = element_blank())
+    d = 
+      melt(d, id.vars = 'value', value.name = 'pushes') %>%
+      .[, grp := fifelse(variable=='date', 
+                         paste(year(value)),  
+                         fifelse(variable=='date_offset', 
+                                 paste(year(value)-1), 
+                                 paste(variable)))] %>%
+      .[, pnl := factor(fifelse(variable=='diff', 'diff', 'main'), levels = c('main', 'diff'))]
+    ggplot(d, aes(value, pushes, col = grp, group = grp)) + 
+      geom_line() +
+      scale_x_date(date_labels = '%b %y') +
+      scale_y_continuous(labels = scales::comma) +
+      labs(y = 'Pushes') +
+      theme(axis.title.x = element_blank(), legend.title = element_blank()) + 
+      facet_wrap(~pnl, ncol = 1, scales = 'free_y')
+  }
