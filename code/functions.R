@@ -159,11 +159,14 @@ diff_plot =
                                  paste(year(value)-1), 
                                  paste(variable)))] %>%
       .[, pnl := factor(fifelse(variable=='diff', 'diff', 'main'), levels = c('main', 'diff'))]
-    ggplot(d, aes(value, pushes, col = grp, group = grp)) + 
+    p =
+      ggplot(d, aes(value, pushes, col = grp, group = grp)) + 
       geom_line() +
       scale_x_date(date_labels = '%b %y') +
       scale_y_continuous(labels = scales::comma) +
       labs(y = 'Pushes') +
       theme(axis.title.x = element_blank(), legend.title = element_blank()) + 
       facet_wrap(~pnl, ncol = 1, scales = 'free_y')
+    p + ggsave(here('figs/global-diff.png'), width = 8, height =5)
+    p + ggsave(here('figs/PDF/global-diff.pdf'), width = 8, height =5, device = cairo_pdf)
   }
