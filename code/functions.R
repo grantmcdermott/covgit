@@ -20,7 +20,7 @@
 #' bq_ght_push()
 #' @author Grant McDermott
 get_gh_pushes =
-  function(year=NULL, month=NULL, state=NULL, state_alias=NULL) {
+  function(year=NULL, month=NULL, city=NULL, city_alias=NULL, state=NULL, state_alias=NULL) {
     
     if (is.null(year)) {year = 2020}
     if (is.null(month) & year == 2020) {month = 1} ## Don't have all the data for 2020 yet
@@ -59,22 +59,35 @@ get_gh_pushes =
         .con = gharchive_con
       )
     
-    if (!is.null(state)) {
+    
+    ## Location-specific users
+    location_null = is.null(city) & is.null(state)
+    
+    if (!location_null) {
+      
+      location = ifelse(is.null(state), city, ifelse(is.null(city), state, paste0(city, ", ", state)))
+      
       users_query =
         glue::glue_sql(
           "SELECT login
           FROM `ghtorrentmysql1906.MySQL1906.users`
-          WHERE `state` = '", state, "'"
-        )
-      if(!is.null(state_alias)) {
-        users_query = 
-          glue::glue_sql(
-            users_query,
-            " OR `state` = '", state_alias, "'"
-            )
-      }
-      message("Identifying GitHub users in ", state, " from GHTorrent users database...\n")
+          WHERE `location` = '", location, "'"
+          )
       
+      if(!is.null(city)) {
+        users_query = glue::glue_sql(users_query," OR `city` = '", city, "'")
+        if(!is.null(city_alias)) {
+          users_query = glue::glue_sql(users_query," OR `city` = '", city_alias, "'")
+        }
+      }
+      if (!is.null(state)) {
+        users_query = glue::glue_sql(users_query, " OR `state` = '", state, "'")
+        if(!is.null(state_alias)) {
+          users_query = glue::glue_sql(users_query," OR `state` = '", state_alias, "'")
+        }
+      }
+      
+      message("Identifying GitHub users in ", location, " from GHTorrent users database...\n")
       
       join_query = 
         glue::glue_sql(
@@ -123,6 +136,7 @@ get_gh_pushes =
     ## Below query will give annoying warning about SQL to S4 class conversion, 
     ## we'd rather just suppress.
     daily_pushes = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
+    daily_pushes$location = ifelse(location_null, 'Global', location)
     
     return(daily_pushes)
     
@@ -137,8 +151,10 @@ diff_plot =
   function(data, start_date, end_date) {
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
+    location = unique(data$location)
     d = 
       copy(data) %>%
+      .[, location := NULL] %>%
       .[, date_offset := date + 365] %>%
       .[, date_offset := date + 365 + wday(date) - wday(date_offset)] %>%
       melt(id.vars = 'pushes') %>%
@@ -167,6 +183,6 @@ diff_plot =
       labs(y = 'Pushes') +
       theme(axis.title.x = element_blank(), legend.title = element_blank()) + 
       facet_wrap(~pnl, ncol = 1, scales = 'free_y')
-    p + ggsave(here('figs/global-diff.png'), width = 8, height =5)
-    p + ggsave(here('figs/PDF/global-diff.pdf'), width = 8, height =5, device = cairo_pdf)
+    p + ggsave(here('figs', paste0(tolower(location), '-diff.png')), width = 8, height =5)
+    p + ggsave(here('figs/PDF', paste0(tolower(location), '-diff.pdf')), width = 8, height =5, device = cairo_pdf)
   }
