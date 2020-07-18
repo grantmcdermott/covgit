@@ -13,6 +13,9 @@
 #'    the function will query data from the entire year.
 #' @param state Optional. A character string, e.g. 'NY'.
 #' @param state_alias Optional. A character string, e.g. 'New York'.
+#' @param tz Optional. A character string indicating the appropriate timezone
+#'    for your location of interest, e.g. 'America/Los_Angeles'. If none is
+#'    provided then the query defaults to 'UTC'.
 #' @return A tibble of daily push events
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
@@ -20,7 +23,24 @@
 #' bq_ght_push()
 #' @author Grant McDermott
 get_gh_pushes =
-  function(year=NULL, month=NULL, city=NULL, city_alias=NULL, state=NULL, state_alias=NULL) {
+  function(year=NULL, 
+           month=NULL, 
+           city=NULL, city_alias=NULL, 
+           state=NULL, state_alias=NULL,
+           tz=NULL) {
+    
+    if (is.null(tz)) {
+      tz='UTC'
+      message('No timezone provided. All dates and times defaulting to UTC.')
+    } else {
+        ## Check that given tz at least matches one of R's built-in list pairs
+        if (tz %in% OlsonNames()) {
+          message('Note: Dates and times will be converted to timezone: ', tz)
+        } else {
+          stop("Unexpected timezone: ", tz, 
+               "\nTry picking one from `OlsonNames()` (print it in your R console).")
+          }
+      }
     
     if (is.null(year)) {year = 2020}
     if (is.null(month) & year == 2020) {month = 1} ## Don't have all the data for 2020 yet
@@ -47,7 +67,7 @@ get_gh_pushes =
         SELECT * 
         FROM(
           SELECT
-            DATE(created_at) AS date,
+            DATE(created_at, '", tz, "') AS date,
             actor.login as actor_login,
             COUNT(*) AS pushes
           FROM  {`query_tbl`}
