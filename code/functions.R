@@ -8,46 +8,54 @@
 #' relevant project table(s) depending on the parameters provided (geographic
 #' limitations, etc.)
 #'
-#' @param year An integer. Must be between 2017 and 2020 (the default).
-#' @param month Optional. An integer between 1 and 12. If none is provided
+#' @param year An integer between 2017 and 2020 (the default).
+#' @param month An integer between 1 and 12. If no argument is provided
 #'    the function will query data from the entire year.
-#' @param state Optional. A character string, e.g. 'NY'.
-#' @param state_alias Optional. A character string, e.g. 'New York'.
-#' @param tz Optional. A character string indicating the appropriate timezone
-#'    for your location of interest, e.g. 'America/Los_Angeles'. If none is
+#' @param city A character string, e.g. 'San Francisco' describing the 
+#'    particular geographic area of interest. Ignore this argument if you'd like
+#'    to query data from the entire globe.
+#' @param city_alias A character string, e.g. 'SF'. Only used if the
+#'   `city` argument is also provided.
+#' @param state A character string, e.g. 'CA' describing the particular 
+#'    geographic area of interest.Ignore this argument if you'd like to query
+#'    data from the entire globe.
+#' @param state_alias A character string, e.g. 'California'. Only used if the
+#'   `state` argument is also provided.
+#' @param tz A character string indicating the appropriate timezone for your
+#'    location of interest, e.g. 'America/Los_Angeles'. If none is
 #'    provided then the query defaults to 'UTC'.
+#' @param hourly Logical. Should the data be aggregated at the daily (default)
+#'    or hourly level?
 #' @return A tibble of daily push events
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
 #' @examples
-#' bq_ght_push()
+#' bq_ght_pushes()
 #' @author Grant McDermott
 get_gh_pushes =
   function(year=NULL, 
            month=NULL, 
            city=NULL, city_alias=NULL, 
            state=NULL, state_alias=NULL,
-           tz=NULL) {
+           tz=NULL,
+           hourly=FALSE) {
     
     if (is.null(tz)) {
       tz='UTC'
       message('No timezone provided. All dates and times defaulting to UTC.')
     } else {
-        ## Check that given tz at least matches one of R's built-in list pairs
-        if (tz %in% OlsonNames()) {
-          message('Note: Dates and times will be converted to timezone: ', tz)
-        } else {
-          stop("Unexpected timezone: ", tz, 
-               "\nTry picking one from `OlsonNames()` (print it in your R console).")
-          }
+      ## Check that given tz at least matches one of R's built-in list pairs
+      if (tz %in% OlsonNames()) {
+        message('Note: Dates and times will be converted to timezone: ', tz)
+      } else {
+        stop("Unexpected timezone: ", tz, 
+             "\nTry picking one from `OlsonNames()` (print it in your R console).")
       }
+    }
     
     if (is.null(year)) {year = 2020}
     if (is.null(month) & year == 2020) {month = 1} ## Don't have all the data for 2020 yet
-    if (!is.null(month)) {
-      month = paste0(month)
-      if (stringr::str_count(month)==1) {month = paste0("0", month)}
-    }
+    if (!is.null(month)) {month=sprintf("%02d", month)}
     
     gharchive_dataset = ifelse(is.null(month), "year", "month")
     
@@ -57,9 +65,18 @@ get_gh_pushes =
         project = "githubarchive",
         dataset = gharchive_dataset,
         billing = billing_id
-      )
+        )
     
     query_tbl = paste0(year, month)
+    
+    ## Aggregate at daily or hourly level?
+    tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
+    t_vars = "date"
+    hourly=TRUE
+    if (hourly) {
+      tz_vars = paste0(tz_vars, ", EXTRACT(HOUR from DATETIME(created_at, '", tz, "')) AS hr")
+      t_vars = paste0(t_vars, ", hr")
+    }
     
     pushes_query =
       glue::glue_sql(
@@ -67,14 +84,14 @@ get_gh_pushes =
         SELECT * 
         FROM(
           SELECT
-            DATE(created_at, '", tz, "') AS date,
+            ", tz_vars, ",
             actor.login as actor_login,
             COUNT(*) AS pushes
-          FROM  {`query_tbl`}
+          FROM {`query_tbl`}
           WHERE type = 'PushEvent'
-          GROUP BY date, actor_login
+          GROUP BY ", t_vars, ", actor_login
           )
-        WHERE pushes < 250
+        WHERE pushes < 30
         ",
         .con = gharchive_con
       )
@@ -111,26 +128,26 @@ get_gh_pushes =
       
       join_query = 
         glue::glue_sql(
-        "
-        SELECT date, actor_login, pushes
+          "
+        SELECT ", t_vars, ", actor_login, pushes
         FROM (
           ({pushes_query}) AS a
           INNER JOIN ({users_query}) AS b
           ON a.actor_login = b.login
           )
         ",
-        .con = gharchive_con
+          .con = gharchive_con
         )
       
       full_query = 
         glue::glue_sql(
           "
           SELECT 
-            date,
+            ", t_vars, ",
             SUM(pushes) AS pushes
           FROM ({join_query})
-          GROUP BY date
-          ORDER BY date ASC
+          GROUP BY date, hr
+          ORDER BY date ASC, hr ASC
           ",
           .con = gharchive_con
         )
@@ -141,14 +158,14 @@ get_gh_pushes =
         glue::glue_sql(
           "
           SELECT 
-            date,
+            ", t_vars, ",
             SUM(pushes) AS pushes
           FROM ({pushes_query})
-          GROUP BY date
-          ORDER BY date ASC
+          GROUP BY date, hr
+          ORDER BY date ASC, hr ASC
           ",
           .con = gharchive_con
-          )
+        )
     }
     
     message("Running main query for daily push activity for the period ", query_tbl, ".\n")
