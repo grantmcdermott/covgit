@@ -30,7 +30,15 @@
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
 #' @examples
-#' bq_ght_pushes()
+#' ## Get daily pushes for whole world in Jan 2020 (all defaults)
+#' get_gh_pushes()
+#' ## Get hourly pushes for Seattle, WA over May 2020, making sure to convert
+#' ## timestamp data from UTC to local (i.e. PST) time.
+#' get_gh_pushes_testing(month = 5, city = 'Seattle', 
+#'                       state = 'WA', tz = 'America/Los_Angeles', 
+#'                       hourly = TRUE)
+
+#' get_gh_pushes()
 #' @author Grant McDermott
 get_gh_pushes =
   function(year=NULL, 
