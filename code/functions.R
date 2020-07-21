@@ -17,7 +17,7 @@
 #' @param city_alias A character string, e.g. 'SF'. Only used if the
 #'   `city` argument is also provided.
 #' @param state A character string, e.g. 'CA' describing the particular 
-#'    geographic area of interest.Ignore this argument if you'd like to query
+#'    geographic area of interest. Ignore this argument if you'd like to query
 #'    data from the entire globe.
 #' @param state_alias A character string, e.g. 'California'. Only used if the
 #'   `state` argument is also provided.
@@ -26,6 +26,23 @@
 #'    provided then the query defaults to 'UTC'.
 #' @param hourly Logical. Should the data be aggregated at the daily (default)
 #'    or hourly level?
+#' @param users_tab Character string denoting BigQuery table that will be used
+#'    to geo-reference users. Note that the full project.database.table path
+#'    must be provided and the table variables are expected to conform to
+#'    particular standards (see Details). Defaults to 
+#'    "ghtorrentmysql1906.MySQL1906.users".
+#' @details If location arguments like `city` and `state` are provided, the 
+#'    function will attempt to geo-reference users and limit the query search
+#'    accordingly. By default this geo-referencing is done against the GHTorrent 
+#'    "users" table from June 2019 (Bigquery address: 
+#'    ["ghtorrentmysql1906.MySQL1906.users"](https://console.cloud.google.com/bigquery?p=ghtorrentmysql1906&d=MySQL1906&t=users&page=table)).
+#'    If a different, bespoke user table is provided via the `user_tab` 
+#'    argument, then geo-referencing will instead be done against that. Note,
+#'    however, that the function still expects the variables in this bespoke
+#'    table to conform to the same schema as the default GHTorrent one. In
+#'    particular, it expects (and will use) the following variables to match
+#'    users: `login`, `state`, `city`, and `location`. You will need to ensure
+#'    that your bespoke users table contains these variables.
 #' @return A tibble of daily push events
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
@@ -37,8 +54,6 @@
 #' get_gh_pushes_testing(month = 5, city = 'Seattle', 
 #'                       state = 'WA', tz = 'America/Los_Angeles', 
 #'                       hourly = TRUE)
-
-#' get_gh_pushes()
 #' @author Grant McDermott
 get_gh_pushes =
   function(year=NULL, 
@@ -46,7 +61,8 @@ get_gh_pushes =
            city=NULL, city_alias=NULL, 
            state=NULL, state_alias=NULL,
            tz=NULL,
-           hourly=FALSE) {
+           hourly=FALSE,
+           users_tab=NULL) {
     
     if (is.null(tz)) {
       tz='UTC'
@@ -80,11 +96,13 @@ get_gh_pushes =
     ## Aggregate at daily or hourly level?
     tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
     t_vars = "date"
+    t_vars_order = "date ASC"
     pushes_max = 250
     if (hourly) {
       tz_vars = paste0(tz_vars, ", EXTRACT(HOUR from DATETIME(created_at, '", tz, "')) AS hr")
       t_vars = paste0(t_vars, ", hr")
       pushes_max = 30
+      t_vars_order = "date ASC, hr ASC"
     }
     
     pushes_query =
@@ -109,31 +127,35 @@ get_gh_pushes =
       
       location = ifelse(is.null(state), city, ifelse(is.null(city), state, paste0(city, ", ", state)))
       
+      ## Use default GHTorrent June 2019 users table if none provided
+      if (is.null(users_tab)) {users_tab = "ghtorrentmysql1906.MySQL1906.users"}
+      
       users_query =
         glue::glue_sql(
-          "SELECT login
-          FROM `ghtorrentmysql1906.MySQL1906.users`
-          WHERE `location` = '", location, "'"
+          "SELECT login 
+          FROM `", users_tab, "`
+          WHERE location = '", location, "'",
+          .con = DBI::ANSI() ## https://github.com/tidyverse/glue/issues/120
           )
       
       if(!is.null(city)) {
-        users_query = glue::glue_sql(users_query," OR `city` = '", city, "'")
+        users_query = glue::glue_sql(users_query," OR city = '", city, "'")
         if(!is.null(city_alias)) {
-          users_query = glue::glue_sql(users_query," OR `city` = '", city_alias, "'")
+          users_query = glue::glue_sql(users_query," OR city = '", city_alias, "'")
         }
       }
       if (!is.null(state)) {
-        users_query = glue::glue_sql(users_query, " OR `state` = '", state, "'")
+        users_query = glue::glue_sql(users_query, " OR state = '", state, "'")
         if(!is.null(state_alias)) {
-          users_query = glue::glue_sql(users_query," OR `state` = '", state_alias, "'")
+          users_query = glue::glue_sql(users_query," OR state = '", state_alias, "'")
         }
       }
       
-      message("Identifying GitHub users in ", location, " from GHTorrent users database...\n")
+      message("Identifying GitHub users in ", location, " from ", users_tab, "...\n")
       
       join_query = 
         glue::glue_sql(
-          "
+        "
         SELECT ", t_vars, ", actor_login, pushes
         FROM (
           ({pushes_query}) AS a
@@ -151,9 +173,8 @@ get_gh_pushes =
             ", t_vars, ",
             SUM(pushes) AS pushes
           FROM ({join_query})
-          GROUP BY date, hr
-          ORDER BY date ASC, hr ASC
-          ",
+          GROUP BY ", t_vars, "
+          ORDER BY ", t_vars_order,
           .con = gharchive_con
         )
       
@@ -166,9 +187,8 @@ get_gh_pushes =
             ", t_vars, ",
             SUM(pushes) AS pushes
           FROM ({pushes_query})
-          GROUP BY date, hr
-          ORDER BY date ASC, hr ASC
-          ",
+          GROUP BY ", t_vars, "
+          ORDER BY ", t_vars_order,
           .con = gharchive_con
         )
     }
@@ -177,10 +197,10 @@ get_gh_pushes =
     
     ## Below query will give annoying warning about SQL to S4 class conversion, 
     ## we'd rather just suppress.
-    daily_pushes = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
-    daily_pushes$location = ifelse(location_null, 'Global', location)
+    pushes_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
+    pushes_df$location = ifelse(location_null, 'Global', location)
     
-    return(daily_pushes)
+    return(pushes_df)
     
     DBI::dbDisconnect(gharchive_con)
     
