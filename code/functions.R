@@ -216,7 +216,7 @@ get_gh_pushes =
 
 # Difference plot ---------------------------------------------------------
 
-diff_plot = 
+daily_diff_plot = 
   function(data, start_date, end_date) {
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
@@ -228,14 +228,8 @@ diff_plot =
       .[, date_offset := date + 365 + wday(date) - wday(date_offset)] %>%
       melt(id.vars = 'pushes') %>%
       .[value >= start_date & value <= end_date] %>%
-      dcast(value ~ variable, value.var = 'pushes') %>%
-      .[, diff := date - date_offset]
-    # ggplot(d, aes(value, diff)) + 
-    #   geom_line() +
-    #   scale_x_date(date_labels = '%b %y') +
-    #   scale_y_continuous(labels = scales::comma) +
-    #   labs(y = 'Difference') +
-    #   theme(axis.title.x = element_blank())
+      dcast(value ~ variable, value.var = 'pushes', fun.aggregate = mean) %>%
+      .[, Difference := date - date_offset]
     d = 
       melt(d, id.vars = 'value', value.name = 'pushes') %>%
       .[, grp := fifelse(variable=='date', 
@@ -243,14 +237,21 @@ diff_plot =
                          fifelse(variable=='date_offset', 
                                  paste(year(value)-1), 
                                  paste(variable)))] %>%
-      .[, pnl := factor(fifelse(variable=='diff', 'diff', 'main'), levels = c('main', 'diff'))]
+      .[, pnl := factor(fifelse(variable=='Difference', 'diff', 'main'), levels = c('main', 'diff'))]
     p =
-      ggplot(d, aes(value, pushes, col = grp, group = grp)) + 
+      ggplot(d, aes(value, pushes, col = grp, fill = grp, group = grp)) + 
       geom_line() +
-      scale_x_date(date_labels = '%b %y') +
+      geom_area(data = d[pnl=='diff'], alpha = 0.3, show.legend = FALSE) +
+      scale_x_date(date_breaks = '1 month', date_labels = '%B') +
       scale_y_continuous(labels = scales::comma) +
-      labs(y = 'Pushes') +
-      theme(axis.title.x = element_blank(), legend.title = element_blank()) + 
+      scale_colour_brewer(palette = 'Set2', aesthetics = c('colour', 'fill')) +
+      labs(y = 'No. of pushes') +
+      theme(
+        axis.title.x = element_blank(),
+        strip.text = element_blank(),
+        legend.title = element_blank(),
+        legend.position = 'bottom'
+        ) + 
       facet_wrap(~pnl, ncol = 1, scales = 'free_y')
     p + ggsave(here('figs', paste0(tolower(location), '-diff.png')), width = 8, height =5)
     p + ggsave(here('figs/PDF', paste0(tolower(location), '-diff.pdf')), width = 8, height =5, device = cairo_pdf)
