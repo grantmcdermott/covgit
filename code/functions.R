@@ -145,9 +145,16 @@ get_gh_pushes =
         }
       }
       if (!is.null(state)) {
-        users_query = glue::glue_sql(users_query, " OR state = '", state, "'")
-        if(!is.null(state_alias)) {
-          users_query = glue::glue_sql(users_query," OR state = '", state_alias, "'")
+        ## Only filter by state on its own if no city is provided. Otherwise 
+        ## will pull in (e.g.) all of CA activity when only desire San 
+        ## Francisco, CA. Downside is that you may pull in some spurious cases 
+        ## when two places share the same name (e.g. Portland, OR and Portland, 
+        ## ME) but this seems by far the lesser of two evils.
+        if(is.null(city)) {
+          users_query = glue::glue_sql(users_query, " OR state = '", state, "'")
+          if(!is.null(state_alias)) {
+            users_query = glue::glue_sql(users_query," OR state = '", state_alias, "'")
+          }
         }
       }
       
