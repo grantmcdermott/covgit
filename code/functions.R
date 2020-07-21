@@ -90,17 +90,14 @@ get_gh_pushes =
     pushes_query =
       glue::glue_sql(
         "
-        SELECT * 
-        FROM(
-          SELECT
-            ", tz_vars, ",
-            actor.login as actor_login,
-            COUNT(*) AS pushes
-          FROM {`query_tbl`}
-          WHERE type = 'PushEvent'
-          GROUP BY ", t_vars, ", actor_login
-          )
-        WHERE pushes < ", pushes_max,
+        SELECT
+          ", tz_vars, ",
+          actor.login as actor_login,
+          COUNT(*) AS pushes
+        FROM {`query_tbl`}
+        WHERE type = 'PushEvent'
+        GROUP BY ", t_vars, ", actor_login
+        HAVING COUNT(*) < ", pushes_max,
         .con = gharchive_con
       )
     
