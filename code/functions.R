@@ -80,10 +80,12 @@ get_gh_pushes =
     ## Aggregate at daily or hourly level?
     tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
     t_vars = "date"
+    pushes_max = 250
     hourly=TRUE
     if (hourly) {
       tz_vars = paste0(tz_vars, ", EXTRACT(HOUR from DATETIME(created_at, '", tz, "')) AS hr")
       t_vars = paste0(t_vars, ", hr")
+      pushes_max = 30
     }
     
     pushes_query =
@@ -99,8 +101,7 @@ get_gh_pushes =
           WHERE type = 'PushEvent'
           GROUP BY ", t_vars, ", actor_login
           )
-        WHERE pushes < 30
-        ",
+        WHERE pushes < ", pushes_max,
         .con = gharchive_con
       )
     
