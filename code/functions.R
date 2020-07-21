@@ -81,7 +81,6 @@ get_gh_pushes =
     tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
     t_vars = "date"
     pushes_max = 250
-    hourly=TRUE
     if (hourly) {
       tz_vars = paste0(tz_vars, ", EXTRACT(HOUR from DATETIME(created_at, '", tz, "')) AS hr")
       t_vars = paste0(t_vars, ", hr")
