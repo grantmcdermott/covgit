@@ -220,15 +220,17 @@ daily_diff_plot =
   function(data, start_date, end_date) {
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
+    ## Get the date offset for comparing year on year (i.e. match weekends with 
+    ## weekends, etc.). Note that we take the median value to avoid weekday 
+    ## discontinuities (i.e. start of new week in one year vs old week in 
+    ## another).
+    date_offset = 365 + median(wday(data$date) - wday(data$date+365)) 
     suff = gsub("[[:punct:]][[:space:]]", "_", tolower(unique(data$location)))
-    d = 
-      copy(data) %>%
-      .[, location := NULL] %>%
-      .[, date_offset := date + 365] %>%
-      .[, date_offset := date + 365 + wday(date) - wday(date_offset)] %>%
+    d = copy(data) %>%
+      .[, ':=' (location = NULL, date_offset = date + date_offset)] %>%
       melt(id.vars = 'pushes') %>%
       .[value >= start_date & value <= end_date] %>%
-      dcast(value ~ variable, value.var = 'pushes', fun.aggregate = mean) %>%
+      dcast(value ~ variable, value.var = 'pushes') %>%
       .[, Difference := date - date_offset]
     d = 
       melt(d, id.vars = 'value', value.name = 'pushes') %>%
