@@ -220,7 +220,7 @@ daily_diff_plot =
   function(data, start_date, end_date) {
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
-    location = unique(data$location)
+    suff = gsub("[[:punct:]][[:space:]]", "_", tolower(unique(data$location)))
     d = 
       copy(data) %>%
       .[, location := NULL] %>%
@@ -253,6 +253,6 @@ daily_diff_plot =
         legend.position = 'bottom'
         ) + 
       facet_wrap(~pnl, ncol = 1, scales = 'free_y')
-    p + ggsave(here('figs', paste0(tolower(location), '-diff.png')), width = 8, height =5)
-    p + ggsave(here('figs/PDF', paste0(tolower(location), '-diff.pdf')), width = 8, height =5, device = cairo_pdf)
+    p + ggsave(here('figs', paste0(suff, '-diff.png')), width = 8, height =5)
+    p + ggsave(here('figs/PDF', paste0(suff, '-diff.pdf')), width = 8, height =5, device = cairo_pdf)
   }
