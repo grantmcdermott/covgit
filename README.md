@@ -1,30 +1,66 @@
 # Analysis of COVID-19's effect on GitHub activity
 
-To reproduce all of the results, clone this repo and then 
+To reproduce all of the results, clone this repo and then follow these three
+steps:
 
-1. Install the necesssary packages from R:
+### Step 0: Google Cloud API Credentials
 
-  ```r
-  renv::restore() ## Enter "y" when prompted. See 'renv' section below for details.
-  ```
+The data for this project are obtained from 
+[**Google BigQuery**](https://console.cloud.google.com/bigquery). You will need
+to set up your Google Cloud API key in order to run the underlying SQL calls and 
+download the data. 
 
-2. Run the make file `make.R`, e.g. from the command line, manually, or by sourcing the script from R:
+I have detailed instructions on how to do that 
+[here](https://raw.githack.com/uo-ec607/lectures/master/14-gce-ii/14-gce-ii.html#Google_Cloud_API_Service_Account_key). 
+Please use *exactly* the same environment variables (e.g. "GCE_AUTH_FILE") as I
+use in the linked tutorial, otherwise the code will not work.
 
-  ```r
-  source('make.R')
-  ```
+### Step 1. Install the necessary packages from R:
 
-
-## renv
-
-This repo contains an [**renv**](https://rstudio.github.io/renv/) lockfile to snapshot package versions and dependencies. To install all necessary packages in a sandboxed environment, run:
+I use [**renv**](https://rstudio.github.io/renv/) to snapshot the entire project 
+environment. To install all of the necessary packages and their dependencies, 
+simply run:
 
 ```r
-# renv::init()    ## Automatically run if you cloned/opened the repo as an RStudio project
-renv::restore()   ## Installs a fixed snapshop of the required R packages (recommended)
-# renv::hydrate() ## Installs the latest versions of the required R packages (use at own risk)
+# renv::init()  ## Only needed if you didn't clone the repo as an RStudio Project
+renv::restore() ## Enter "y" when prompted. See 'renv' section below for details.
 ```
 
-Note that this may take a few minutes if this is the first time that you're installing packages in an **renv** environment. However, global caching etc. mean that all future package (re)installations will be *much* quicker. I recommend taking a quick look at the **renv** [documentation](https://rstudio.github.io/renv/) for more information.
+This make take a few minutes if it is the first time that you are installing
+packages into an **renv** environment.
 
-(As an aside, I have also set [RStudio Package Manager](https://packagemanager.rstudio.com/) (RSPM) as the default package repo location in the lockfile, i.e. rather than the usual CRAN. This enables fast installation of pre-compiled R package binaries on Linux, but should otherwise have no effect on other users.)
+
+### Step 2. Run the analysis
+
+I use [**drake**](https://books.ropensci.org/drake/) to automate the entire 
+project build (analysis, etc.). Assuming that you have set up your Google Cloud 
+API key (Step 0) and installed the necessary R packages (Step 1), simply run the 
+`make.R` file at the root of the repo.
+
+You can do this interactively. Or you can source the entire script from within 
+R:
+
+```r
+source('make.R')
+```
+
+Or, you can source it directly from the shell:
+
+```sh
+Rscript make.R
+```
+
+(You maybe prompted to authenticate with BigQuery via your browser before it 
+will allow you to download the data.)
+
+Regardless of how you choose to do it, note that running the `make.R` file once
+will cache all of the intermediate targets and objects (e.g. data frames and 
+plots). This is nice because, like standard Make tools, it will only redo the 
+parts of the analysis that is has too. So we won't get billed by BigQuery every
+time we run `make.R` again... although the figure would be minuscule for the 
+small/efficient queries that we are running here. You can pull all of these 
+cached objects into the global environment of a live R session by running:
+
+```r
+drake::loadd()
+```
