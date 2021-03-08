@@ -8,7 +8,7 @@
 #' relevant project table(s) depending on the parameters provided (geographic
 #' limitations, etc.)
 #'
-#' @param year An integer between 2017 and 2020 (the default).
+#' @param year An integer between 2017 and the current year (the default).
 #' @param month An integer between 1 and 12. If no argument is provided
 #'    the function will query data from the entire year.
 #' @param city A character string, e.g. 'San Francisco' describing the 
@@ -77,8 +77,8 @@ get_gh_pushes =
       }
     }
     
-    if (is.null(year)) {year = 2020}
-    if (is.null(month) & year == 2020) {month = 1} ## Don't have all the data for 2020 yet
+    if (is.null(year)) {year = data.table::year(Sys.Date())}
+    if (is.null(month) & year == data.table::year(Sys.Date())) {month = 1} ## Won't have all data for current year
     if (!is.null(month)) {month=sprintf("%02d", month)}
     
     gharchive_dataset = ifelse(is.null(month), "year", "month")
@@ -230,6 +230,7 @@ daily_diff_plot =
       .[, ':=' (location = NULL, date_offset = date + date_offset)] %>%
       melt(id.vars = 'pushes') %>%
       .[value >= start_date & value <= end_date] %>%
+      .[, .(pushes = sum(pushes)), by = .(variable, value)] %>% ## ICO any remaining duplicates
       dcast(value ~ variable, value.var = 'pushes') %>%
       .[, Difference := date - date_offset]
     d = 
@@ -244,7 +245,7 @@ daily_diff_plot =
       ggplot(d, aes(value, pushes, col = grp, fill = grp, group = grp)) + 
       geom_line() +
       geom_area(data = d[pnl=='diff'], alpha = 0.3, show.legend = FALSE) +
-      scale_x_date(date_breaks = '1 month', date_labels = '%B') +
+      scale_x_date(date_breaks = '1 month', date_labels = '%b') +
       scale_y_continuous(labels = scales::comma) +
       scale_colour_brewer(palette = 'Set2', aesthetics = c('colour', 'fill')) +
       labs(y = 'No. of pushes') +
