@@ -1,6 +1,8 @@
 plan =
   drake_plan(
-    
+
+# Global ------------------------------------------------------------------
+
     ## Get 2021 global data (to date)
     seq21 = setdiff(1:(which(month.abb==months(Sys.Date(), abbreviate = TRUE))-1),
                     0), 
@@ -15,9 +17,18 @@ plan =
     g19 = rbind(as.data.table(get_gh_pushes(year = 2019, month = 1)), 
                 as.data.table(get_gh_pushes(year = 2019))[year(date) != 2020]),
     
-    ## Plot the difference between the global 2019 and 2020 data
-    g_diff_plot = daily_diff_plot(rbind(g19, g20), '2020-01-02', '2020-12-31'),
+    ## Join global data tables
+    g = rbind(g19, g20, g21),
     
+    ## Write to disk
+    fwrite_global = fwrite(g, here('data/global.csv')),
+    
+    ## Plot the difference between the global 2019 and 2020 data
+    g_diff_plot = daily_diff_plot(g, '2020-01-02', '2020-12-31'),
+
+
+# Seattle -----------------------------------------------------------------
+
     ## Get daily 2021 Seattle data (to date)
     sea21 = rbindlist(
       lapply(seq21,
@@ -46,9 +57,18 @@ plan =
                                   tz = 'America/Los_Angeles'))[year(date) != 2020]
       )[, .(pushes = sum(pushes)), by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
     
-    ## Plot the difference between the global 2019 and 2020 data
-    sea_diff_plot = daily_diff_plot(rbind(sea19, sea20), '2020-01-02', '2020-12-31'),
+    ## Join Seattle data tables
+    sea = rbind(sea19, sea20, sea21),
     
+    ## Write to disk
+    fwrite_sea = fwrite(sea, here('data/sea.csv')),
+    
+    ## Plot the difference between the Seattle 2019 and 2020 data
+    sea_diff_plot = daily_diff_plot(sea, '2020-01-02', '2020-12-31'),
+
+
+# Seattle (Jan 2019 cohort) -----------------------------------------------
+
     ## Same as the above, but this time limited to the group of users who were 
     ## active during January 2019. In other words, we follow the exact same 
     ## users through and try to isolate the intensive margin for this cohort.
@@ -74,8 +94,13 @@ plan =
                                   users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'))[year(date) != 2020]
     )[, .(pushes = sum(pushes)), by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
     
-    sea_diff_plot_cohort = daily_diff_plot(
-      rbind(sea19_cohort, sea20_cohort)[, location:=paste(location, 'ght1906_matched_gharch201901')], 
-      '2020-01-02', '2020-12-31')
+    # Join Seattle cohort data
+    sea_cohort = rbind(sea19_cohort, sea20_cohort)[, location := paste(location, 'cohort')],
+    
+    ## Write to disk
+    fwrite_sea_cohort = fwrite(sea, here('data/sea-cohort.csv')),
+    
+    ## Diff plot
+    sea_diff_plot_cohort = daily_diff_plot(sea_cohort, '2020-01-02', '2020-12-31')
     
     )
