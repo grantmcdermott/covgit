@@ -31,6 +31,15 @@
 #'    must be provided and the table variables are expected to conform to
 #'    particular standards (see Details). Defaults to 
 #'    "ghtorrentmysql1906.MySQL1906.users".
+#' @param gender Character string, e.g. 'male' or 'female'. Only used if the
+#'    `users_tab` argument is not NULL.
+#' @param age Integer vector, e.g. 20:29 or c(20, 29) denoting the upper and
+#'    lower bounds on user age. Passed internally to `range()`, so a single
+#'    integer will also work. Only used if the `users_tab` argument is not NULL.
+#' @param dryrun Logical. Should the query be executed? (Default FALSE means 
+#'    yes.) If switched to TRUE, then the full SQL quert string will be printed
+#'    to screen.
+#' 
 #' @details If location arguments like `city` and `state` are provided, the 
 #'    function will attempt to geo-reference users and limit the query search
 #'    accordingly. By default this geo-referencing is done against the GHTorrent 
@@ -62,7 +71,9 @@ get_gh_pushes =
            state=NULL, state_alias=NULL,
            tz=NULL,
            hourly=FALSE,
-           users_tab=NULL) {
+           users_tab=NULL,
+           gender=NULL, age=NULL,
+           dryrun=FALSE) {
     
     if (is.null(tz)) {
       tz='UTC'
@@ -123,9 +134,9 @@ get_gh_pushes =
     ## Location-specific users
     location_null = is.null(city) & is.null(state)
     
-    if (!location_null) {
-      
-      location = ifelse(is.null(state), city, ifelse(is.null(city), state, paste0(city, ", ", state)))
+    ## We'll run a special sub query for specific users that are defined by
+    ## a predefined table and/or location.
+    if (!is.null(users_tab) | !location_null) {
       
       ## Use default GHTorrent June 2019 users table if none provided
       if (is.null(users_tab)) {users_tab = "ghtorrentmysql1906.MySQL1906.users"}
@@ -133,58 +144,103 @@ get_gh_pushes =
       users_query =
         glue::glue_sql(
           "SELECT login 
-          FROM `", users_tab, "`
-          WHERE location = '", location, "'",
+          FROM `", users_tab, "`",
           .con = DBI::ANSI() ## https://github.com/tidyverse/glue/issues/120
           )
       
-      if(!is.null(city)) {
-        users_query = glue::glue_sql(users_query," OR city = '", city, "'")
-        if(!is.null(city_alias)) {
-          users_query = glue::glue_sql(users_query," OR city = '", city_alias, "'")
-        }
-      }
-      if (!is.null(state)) {
-        ## Only filter by state on its own if no city is provided. Otherwise 
-        ## will pull in (e.g.) all of CA activity when only desire San 
-        ## Francisco, CA. Downside is that you may pull in some spurious cases 
-        ## when two places share the same name (e.g. Portland, OR and Portland, 
-        ## ME) but this seems by far the lesser of two evils.
-        if(is.null(city)) {
-          users_query = glue::glue_sql(users_query, " OR state = '", state, "'")
-          if(!is.null(state_alias)) {
-            users_query = glue::glue_sql(users_query," OR state = '", state_alias, "'")
+      ## Users tab WHERE condition
+      if (!location_null | !is.null(gender) | !is.null(age)) {
+        where_string = "WHERE "
+        
+        ## Location WHERE component
+        if (!location_null) {
+          
+          location = ifelse(is.null(state), city, ifelse(is.null(city), state, paste0(city, ", ", state))) 
+          
+          where_string = glue(where_string, " 
+                              location = '", location, "'")
+          
+          if(!is.null(city)) {
+            where_string = glue(where_string," OR city = '", city, "'")
+            if(!is.null(city_alias)) {
+              where_string = glue(where_string," OR city = '", city_alias, "'")
+            }
           }
+          if (!is.null(state)) {
+            ## Only filter by state on its own if no city is provided. Otherwise 
+            ## will pull in (e.g.) all of CA activity when only desire San 
+            ## Francisco, CA. Downside is that you may pull in some spurious cases 
+            ## when two places share the same name (e.g. Portland, OR and Portland, 
+            ## ME) but this seems by far the lesser of two evils.
+            if(is.null(city)) {
+              where_string = glue(where_string, " OR state = '", state, "'")
+              if(!is.null(state_alias)) {
+                where_string = glue(where_string," OR state = '", state_alias, "'")
+              }
+            }
+          }
+        message("Identifying GitHub users in ", location, " from ", users_tab, "...\n")
         }
+        ## End Location WHERE component
+        
+        ## Gender WHERE component
+        if (!is.null(gender)) {
+          if (where_string!="WHERE ") {
+            where_string =
+              glue(where_string, "
+                   AND ")
+          }
+          where_string = glue(where_string, "gender = '", gender, "'")
+        }
+        ## End Gender WHERE component
+        
+        ## Age WHERE component
+        if (!is.null(age)) {
+          age = range(age)
+          if (where_string!="WHERE ") {
+            where_string =
+              glue(where_string, "
+                   AND ")
+          }
+          where_string = glue(where_string, "age BETWEEN ", age[1], " AND ", age[2])
+        }
+        ## End Age WHERE component
+       
+        ## Add in combined WHERE clause
+        users_query = 
+          glue::glue_sql(
+            users_query, "
+            ", where_string)
+        
       }
-      
-      message("Identifying GitHub users in ", location, " from ", users_tab, "...\n")
+      ## End of User tab WHERE condition
       
       join_query = 
         glue::glue_sql(
-        "
-        SELECT ", t_vars, ", actor_login, pushes
-        FROM (
+          "
+          SELECT ", t_vars, ", actor_login, pushes
+          FROM (
           ({pushes_query}) AS a
           INNER JOIN ({users_query}) AS b
           ON a.actor_login = b.login
           )
-        ",
+          ",
           .con = gharchive_con
-        )
+          )
       
       full_query = 
         glue::glue_sql(
           "
           SELECT 
-            ", t_vars, ",
-            SUM(pushes) AS pushes
+          ", t_vars, ",
+          SUM(pushes) AS pushes,
+          COUNT(actor_login) AS num_users
           FROM ({join_query})
           GROUP BY ", t_vars, "
           ORDER BY ", t_vars_order,
           .con = gharchive_con
-        )
-      
+          )
+    
     } else {
       
       full_query = 
@@ -192,7 +248,8 @@ get_gh_pushes =
           "
           SELECT 
             ", t_vars, ",
-            SUM(pushes) AS pushes
+            SUM(pushes) AS pushes,
+            COUNT(actor_login) AS num_users
           FROM ({pushes_query})
           GROUP BY ", t_vars, "
           ORDER BY ", t_vars_order,
@@ -202,12 +259,16 @@ get_gh_pushes =
     
     message("Running main query for daily push activity for the period ", query_tbl, ".\n")
     
-    ## Below query will give annoying warning about SQL to S4 class conversion, 
-    ## we'd rather just suppress.
-    pushes_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
-    pushes_df$location = ifelse(location_null, 'Global', location)
-    
-    return(pushes_df)
+    if (dryrun) {
+      print(full_query)
+    } else {
+      ## Below query will give annoying warning about SQL to S4 class conversion, 
+      ## we'd rather just suppress.
+      pushes_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
+      pushes_df$location = ifelse(location_null, 'Global', location)
+      
+      return(pushes_df)
+    }
     
     DBI::dbDisconnect(gharchive_con)
     
