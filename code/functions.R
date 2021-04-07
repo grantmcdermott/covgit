@@ -1,6 +1,6 @@
-# get_gh_pushes -----------------------------------------------------------
+# get_gh_activity ---------------------------------------------------------
 
-#' Get counts of daily GitHub push activity using Google BigQuery
+#' Get counts of daily GitHub push (and commit) activity using Google BigQuery.
 #'
 #' BigQuery hosts several projects with relevant GitHub data, including from the
 #' GHTorrent project (https://ghtorrent.org) and GH Archive 
@@ -8,7 +8,7 @@
 #' relevant project table(s) depending on the parameters provided (geographic
 #' limitations, etc.)
 #'
-#' @param year An integer between 2017 and the current year (the default).
+#' @param year An integer between 2017 and the current year. Defaults to 2020.
 #' @param month An integer between 1 and 12. If no argument is provided
 #'    the function will query data from the entire year.
 #' @param city A character string, e.g. 'San Francisco' describing the 
@@ -31,14 +31,21 @@
 #'    must be provided and the table variables are expected to conform to
 #'    particular standards (see Details). Defaults to 
 #'    "ghtorrentmysql1906.MySQL1906.users".
-#' @param gender Character string, e.g. 'male' or 'female'. Only used if the
-#'    `users_tab` argument is not NULL.
-#' @param age Integer vector, e.g. 20:29 or c(20, 29) denoting the upper and
-#'    lower bounds on user age. Passed internally to `range()`, so a single
-#'    integer will also work. Only used if the `users_tab` argument is not NULL.
-#' @param dryrun Logical. Should the query be executed? (Default FALSE means 
-#'    yes.) If switched to TRUE, then the full SQL quert string will be printed
-#'    to screen.
+#' @param gender Logical. Should the results be disaggregated by gender? Only 
+#'    used if the `users_tab` argument is not NULL.
+#' @param age Logical. Should the results be disaggregated by age? 
+#'    Alternatively, users may provide the `age_buckets` argument instead (this is
+#'    recommended). Only used if the `users_tab` argument is not NULL.
+#' @param age_buckets Integer vector, e.g. `c(20, 30, 40)` denoting the age
+#'    "buckets" that the results will be classified according to. E.g. The 
+#'    previous vector will generate four age groups: <20, 21-29, 30-39, >=40.
+#'    Supersedes `age` if both arguments provided, although similarly only used 
+#'    if the `users_tab` argument is not NULL.
+#' @param verbose Logical. If TRUE, then the full SQL query string will be 
+#'    printed to screen. Default is FALSE.
+#' @param dryrun Logical. If TRUE then the function will return an estimate of
+#'    how much data will be processed (1 TB ~ $5). Default is FALSE, but highly
+#'    recommended to turn on for first-time queries. See Details and Examples.
 #' 
 #' @details If location arguments like `city` and `state` are provided, the 
 #'    function will attempt to geo-reference users and limit the query search
@@ -56,23 +63,47 @@
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
 #' @examples
-#' ## Get daily pushes for whole world in Jan 2020 (all defaults)
-#' get_gh_pushes()
-#' ## Get hourly pushes for Seattle, WA over May 2020, making sure to convert
-#' ## timestamp data from UTC to local (i.e. PST) time.
-#' get_gh_pushes_testing(month = 5, city = 'Seattle', 
-#'                       state = 'WA', tz = 'America/Los_Angeles', 
-#'                       hourly = TRUE)
+#' ## Example 1: Get daily pushes for whole world in Jan 2021 (i.e. using all 
+#' ## default arguments).
+#' 
+#' # Use dryrun = TRUE to get a sense of how expensive a query will be before
+#' # actually running it.
+#' get_gh_activity(dryrun = TRUE)
+#' 
+#' # Including commits has a dramatic impact (costly to extract!)
+#' get_gh_activity(incl_commits = TRUE, dryrun = TRUE)
+#' 
+#' # Now we actually execute it (excluding commits...)
+#' get_gh_activity()
+#' 
+#' ## Example 2: Get hourly pushes for Seattle, WA over May 2020, making sure 
+#' ## that we convert the timestamp data from UTC to local (i.e. PST) time. 
+#' ## We'll also request hourly data instead of the default daily data.
+#' get_gh_activity(month = 5, city = 'Seattle', state = 'WA', 
+#'                 tz = 'America/Los_Angeles', hourly = TRUE)
+#'                 
+#' ## Example 3: Reference against a previously-created table of users. This
+#' ## table includes information on both gender and age, so we'll use that to
+#' ## return more granular information.
+#' get_gh_activity(year = 2020, month = 3, tz = 'America/Los_Angeles',
+#'                 users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
+#'                 gender = TRUE, age_buckets = c(20, 30, 40, 50),
+#'                 incl_commits = TRUE,
+#'                 dryrun = TRUE)
+#' 
 #' @author Grant McDermott
-get_gh_pushes =
+get_gh_activity =
   function(year=NULL, 
            month=NULL, 
            city=NULL, city_alias=NULL, 
            state=NULL, state_alias=NULL,
            tz=NULL,
            hourly=FALSE,
+           incl_commits=FALSE,
            users_tab=NULL,
-           gender=NULL, age=NULL,
+           gender=FALSE, 
+           age=FALSE, age_buckets=NULL,
+           verbose=FALSE,
            dryrun=FALSE) {
     
     if (is.null(tz)) {
@@ -81,15 +112,15 @@ get_gh_pushes =
     } else {
       ## Check that given tz at least matches one of R's built-in list pairs
       if (tz %in% OlsonNames()) {
-        message('Note: Dates and times will be converted to timezone: ', tz)
+        message('Dates and times will be converted to timezone: ', tz)
       } else {
         stop("Unexpected timezone: ", tz, 
              "\nTry picking one from `OlsonNames()` (print it in your R console).")
       }
     }
     
-    if (is.null(year)) {year = data.table::year(Sys.Date())}
-    if (is.null(month) & year == data.table::year(Sys.Date())) {month = 1} ## Won't have all data for current year
+    if (is.null(year)) {year = 2020}
+    if (is.null(month)) {month = 1}
     if (!is.null(month)) {month=sprintf("%02d", month)}
     
     gharchive_dataset = ifelse(is.null(month), "year", "month")
@@ -108,12 +139,40 @@ get_gh_pushes =
     tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
     t_vars = "date"
     t_vars_order = "date ASC"
-    pushes_max = 250
+    pushes_max = 100
     if (hourly) {
       tz_vars = paste0(tz_vars, ", EXTRACT(HOUR from DATETIME(created_at, '", tz, "')) AS hr")
       t_vars = paste0(t_vars, ", hr")
       pushes_max = 30
       t_vars_order = "date ASC, hr ASC"
+    }
+    
+    ## Are we including gender and age variables?
+    ga_vars = ''
+    ga_range_vars = ''
+    if (gender) ga_vars = paste0(ga_vars, ", gender")
+    if (age | !is.null(age_buckets)) {
+      if (!is.null(age_buckets)) {
+        age_buckets = sort(age_buckets) 
+        age_range_buckets = paste0("RANGE_BUCKET(age, [", 
+                             paste(age_buckets, collapse = ", "), 
+                             "])")
+        ga_range_vars = paste0(ga_vars, ", ", age_range_buckets," AS age")
+      } else {
+        ga_range_vars = paste0(ga_vars, ", age")
+      }
+      ga_vars = paste0(ga_vars, ", age")
+      }
+    
+    t_vars = paste0(t_vars, ga_vars)
+    
+    ## Which event vars are we tracking? Basically, are we including commit
+    ## events (expensive!). From a query-construction perspective, only matters 
+    ## for right at the end of the query, since will be ignored otherwise...
+    e_vars = "SUM(pushes) AS pushes"
+    if (incl_commits) {
+      e_vars = paste0(e_vars, ",
+                      SUM(commits) AS commits")
     }
     
     pushes_query =
@@ -122,11 +181,9 @@ get_gh_pushes =
         SELECT
           ", tz_vars, ",
           actor.login as actor_login,
-          COUNT(*) AS pushes
+          CAST(JSON_EXTRACT(payload, '$.size') AS INT64) AS commits
         FROM {`query_tbl`}
-        WHERE type = 'PushEvent'
-        GROUP BY ", t_vars, ", actor_login
-        HAVING COUNT(*) < ", pushes_max,
+        WHERE type = 'PushEvent'",
         .con = gharchive_con
       )
     
@@ -143,13 +200,13 @@ get_gh_pushes =
       
       users_query =
         glue::glue_sql(
-          "SELECT login 
+          "SELECT login", ga_range_vars, "
           FROM `", users_tab, "`",
           .con = DBI::ANSI() ## https://github.com/tidyverse/glue/issues/120
           )
       
       ## Users tab WHERE condition
-      if (!location_null | !is.null(gender) | !is.null(age)) {
+      if (!location_null) {
         where_string = "WHERE "
         
         ## Location WHERE component
@@ -182,30 +239,7 @@ get_gh_pushes =
         message("Identifying GitHub users in ", location, " from ", users_tab, "...\n")
         }
         ## End Location WHERE component
-        
-        ## Gender WHERE component
-        if (!is.null(gender)) {
-          if (where_string!="WHERE ") {
-            where_string =
-              glue(where_string, "
-                   AND ")
-          }
-          where_string = glue(where_string, "gender = '", gender, "'")
-        }
-        ## End Gender WHERE component
-        
-        ## Age WHERE component
-        if (!is.null(age)) {
-          age = range(age)
-          if (where_string!="WHERE ") {
-            where_string =
-              glue(where_string, "
-                   AND ")
-          }
-          where_string = glue(where_string, "age BETWEEN ", age[1], " AND ", age[2])
-        }
-        ## End Age WHERE component
-       
+
         ## Add in combined WHERE clause
         users_query = 
           glue::glue_sql(
@@ -218,56 +252,98 @@ get_gh_pushes =
       join_query = 
         glue::glue_sql(
           "
-          SELECT ", t_vars, ", actor_login, pushes
+          SELECT 
+          " , t_vars, ", 
+            actor_login, 
+            COUNT(*) AS pushes,
+            SUM(commits) AS commits
           FROM (
           ({pushes_query}) AS a
           INNER JOIN ({users_query}) AS b
           ON a.actor_login = b.login
           )
-          ",
+          GROUP BY ", t_vars, ", actor_login
+          HAVING COUNT(*) < ", pushes_max,
           .con = gharchive_con
           )
+    
+    } else {
       
-      full_query = 
+      join_query = 
         glue::glue_sql(
           "
           SELECT 
+          " , t_vars, ", 
+            actor_login, 
+            COUNT(*) AS pushes,
+            SUM(commits) AS commits
+          FROM 
+          ({pushes_query}) AS a
+          GROUP BY ", t_vars, ", actor_login
+          HAVING COUNT(*) < ", pushes_max,
+          .con = gharchive_con
+        )
+      
+    }
+    
+    full_query = 
+      glue::glue_sql(
+        "
+          SELECT 
           ", t_vars, ",
-          SUM(pushes) AS pushes,
+          ", e_vars, ",
           COUNT(actor_login) AS num_users
           FROM ({join_query})
           GROUP BY ", t_vars, "
           ORDER BY ", t_vars_order,
-          .con = gharchive_con
-          )
+        .con = gharchive_con
+      )
     
-    } else {
-      
-      full_query = 
-        glue::glue_sql(
-          "
-          SELECT 
-            ", t_vars, ",
-            SUM(pushes) AS pushes,
-            COUNT(actor_login) AS num_users
-          FROM ({pushes_query})
-          GROUP BY ", t_vars, "
-          ORDER BY ", t_vars_order,
-          .con = gharchive_con
-        )
-    }
+    dry_q = gsub(query_tbl, 
+                 paste("githubarchive", gharchive_dataset, query_tbl, sep = "."),
+                 full_query)
     
-    message("Running main query for daily push activity for the period ", query_tbl, ".\n")
+    if (verbose) message(dry_q, "\n")
     
     if (dryrun) {
-      print(full_query)
+      
+      qsize = suppressWarnings(bq_perform_query_dry_run(dry_q, billing = billing_id))
+      tbytes = grepl("TB", qsize)
+      # qnum = as.numeric(gsub(" TB| MB", "", qsize))
+      # qnum = ifelse(tbytes, qnum, qnum/1e3)
+      qcost = sprintf("$%.2f", qsize * 5 / 1e12)  ## $5 per TB
+      message("Query will process: ", prettyunits::pretty_bytes(unclass(qsize)), 
+              "\nEstimated cost: ", qcost, "\n")
+      
     } else {
+      
+      message("Running main query for daily push activity for the period ", 
+              query_tbl, ".\n")
+      
       ## Below query will give annoying warning about SQL to S4 class conversion, 
       ## we'd rather just suppress.
-      pushes_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
-      pushes_df$location = ifelse(location_null, 'Global', location)
+      activity_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
       
-      return(pushes_df)
+      if (!is.null(users_tab)) {
+        activity_df$users_tab = users_tab
+        if (!location_null) activity_df$location = location
+        if (!is.null(age_buckets)) {
+          eb = length(age_buckets)+1
+          age_buckets_char = c(paste(age_buckets), age_buckets[eb-1])
+          age_buckets_char[1] = paste0("<", age_buckets_char[1])
+          age_buckets_char[eb] = paste0(">=", age_buckets_char[eb])
+          if (all(diff((1+1):(eb-1)) >= 0)) {
+            for (i in (1+1):(eb-1)) {
+              age_buckets_char[i] = paste0(age_buckets[i-1], "--", age_buckets[i]-1)
+            }
+          }
+          activity_df$age = age_buckets_char[activity_df$age + 1]
+        }
+      } else {
+        activity_df$location = ifelse(location_null, 'Global', location)
+      }
+      
+      return(activity_df)
     }
     
     DBI::dbDisconnect(gharchive_con)
