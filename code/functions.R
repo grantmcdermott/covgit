@@ -8,6 +8,7 @@
 #' relevant project table(s) depending on the parameters provided (geographic
 #' limitations, etc.)
 #'
+#' @param billing Your GCP project ID. Should be a character stringer. Required.
 #' @param year An integer between 2017 and the current year. Defaults to 2020.
 #' @param month An integer between 1 and 12. If no argument is provided
 #'    the function will query data from the entire year.
@@ -63,37 +64,42 @@
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
 #' @examples
+#' billing = Sys.getenv("GCP_PROJECT_ID") ## Replace this with your project ID
+#' 
 #' ## Example 1: Get daily pushes for whole world in Jan 2021 (i.e. using all 
 #' ## default arguments).
 #' 
 #' # Use dryrun = TRUE to get a sense of how expensive a query will be before
 #' # actually running it.
-#' get_gh_pushes(dryrun = TRUE)
+#' get_gh_pushes(billing, dryrun = TRUE)
 #' 
 #' # Including commits has a dramatic impact (costly to extract!)
-#' get_gh_pushes(incl_commits = TRUE, dryrun = TRUE)
+#' get_gh_pushes(billing, incl_commits = TRUE, dryrun = TRUE)
 #' 
 #' # Now we actually execute it (excluding commits...)
-#' get_gh_pushes()
+#' get_gh_pushes(billing)
 #' 
 #' ## Example 2: Get hourly pushes for Seattle, WA over May 2020, making sure 
 #' ## that we convert the timestamp data from UTC to local (i.e. PST) time. 
 #' ## We'll also request hourly data instead of the default daily data.
-#' get_gh_pushes(month = 5, city = 'Seattle', state = 'WA', 
-#'                 tz = 'America/Los_Angeles', hourly = TRUE)
+#' get_gh_pushes(billing, 
+#'               month = 5, city = 'Seattle', state = 'WA', 
+#'               tz = 'America/Los_Angeles', hourly = TRUE)
 #'                 
 #' ## Example 3: Reference against a previously-created table of users. This
 #' ## table includes information on both gender and age, so we'll use that to
 #' ## return more granular information.
-#' get_gh_pushes(year = 2020, month = 3, tz = 'America/Los_Angeles',
-#'                 users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
-#'                 gender = TRUE, age_buckets = c(20, 30, 40, 50),
-#'                 incl_commits = TRUE,
-#'                 dryrun = TRUE)
+#' get_gh_pushes(billing,
+#'               year = 2020, month = 3, tz = 'America/Los_Angeles',
+#'               users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
+#'               gender = TRUE, age_buckets = c(20, 30, 40, 50),
+#'               incl_commits = TRUE,
+#'               dryrun = TRUE)
 #' 
 #' @author Grant McDermott
 get_gh_pushes =
-  function(year=NULL, 
+  function(billing=NULL,
+           year=NULL, 
            month=NULL, 
            city=NULL, city_alias=NULL, 
            state=NULL, state_alias=NULL,
@@ -105,6 +111,8 @@ get_gh_pushes =
            age=FALSE, age_buckets=NULL,
            verbose=FALSE,
            dryrun=FALSE) {
+    
+    if (is.null(billing)) stop("Please provide a GCP project ID for billing.")
     
     if (is.null(tz)) {
       tz='UTC'
@@ -130,7 +138,7 @@ get_gh_pushes =
         bigrquery::bigquery(),
         project = "githubarchive",
         dataset = gharchive_dataset,
-        billing = billing_id
+        billing = billing
         )
     
     query_tbl = paste0(year, month)
@@ -307,7 +315,7 @@ get_gh_pushes =
     
     if (dryrun) {
       
-      qsize = suppressWarnings(bq_perform_query_dry_run(dry_q, billing = billing_id))
+      qsize = suppressWarnings(bq_perform_query_dry_run(dry_q, billing = billing))
       tbytes = grepl("TB", qsize)
       # qnum = as.numeric(gsub(" TB| MB", "", qsize))
       # qnum = ifelse(tbytes, qnum, qnum/1e3)
