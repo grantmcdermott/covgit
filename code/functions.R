@@ -1,4 +1,4 @@
-# get_gh_activity ---------------------------------------------------------
+# get_gh_pushes -----------------------------------------------------------
 
 #' Get counts of daily GitHub push (and commit) activity using Google BigQuery.
 #'
@@ -68,31 +68,31 @@
 #' 
 #' # Use dryrun = TRUE to get a sense of how expensive a query will be before
 #' # actually running it.
-#' get_gh_activity(dryrun = TRUE)
+#' get_gh_pushes(dryrun = TRUE)
 #' 
 #' # Including commits has a dramatic impact (costly to extract!)
-#' get_gh_activity(incl_commits = TRUE, dryrun = TRUE)
+#' get_gh_pushes(incl_commits = TRUE, dryrun = TRUE)
 #' 
 #' # Now we actually execute it (excluding commits...)
-#' get_gh_activity()
+#' get_gh_pushes()
 #' 
 #' ## Example 2: Get hourly pushes for Seattle, WA over May 2020, making sure 
 #' ## that we convert the timestamp data from UTC to local (i.e. PST) time. 
 #' ## We'll also request hourly data instead of the default daily data.
-#' get_gh_activity(month = 5, city = 'Seattle', state = 'WA', 
+#' get_gh_pushes(month = 5, city = 'Seattle', state = 'WA', 
 #'                 tz = 'America/Los_Angeles', hourly = TRUE)
 #'                 
 #' ## Example 3: Reference against a previously-created table of users. This
 #' ## table includes information on both gender and age, so we'll use that to
 #' ## return more granular information.
-#' get_gh_activity(year = 2020, month = 3, tz = 'America/Los_Angeles',
+#' get_gh_pushes(year = 2020, month = 3, tz = 'America/Los_Angeles',
 #'                 users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
 #'                 gender = TRUE, age_buckets = c(20, 30, 40, 50),
 #'                 incl_commits = TRUE,
 #'                 dryrun = TRUE)
 #' 
 #' @author Grant McDermott
-get_gh_activity =
+get_gh_pushes =
   function(year=NULL, 
            month=NULL, 
            city=NULL, city_alias=NULL, 
