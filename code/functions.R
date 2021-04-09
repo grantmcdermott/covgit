@@ -306,7 +306,7 @@ get_gh_activity =
           SELECT 
           " , t_vars, ", 
             actor_login, 
-            COUNT(*) AS events
+            COUNT(*) AS events,
             SUM(commits) AS commits
           FROM 
           ({events_query}) AS a
