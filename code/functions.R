@@ -1,4 +1,4 @@
-# get_gh_pushes -----------------------------------------------------------
+# get_gh_activity -----------------------------------------------------------
 
 #' Get counts of daily GitHub push (and commit) activity using Google BigQuery.
 #'
@@ -26,7 +26,16 @@
 #'    location of interest, e.g. 'America/Los_Angeles'. If none is
 #'    provided then the query defaults to 'UTC'.
 #' @param hourly Logical. Should the data be aggregated at the daily (default)
-#'    or hourly level?
+#'    or hourly level? Default is FALSE.
+#' @param event_type Character vector. Which event types should be aggregated?
+#'    Valid elements include "Push", "Fork", "IssueComment", etc. For a full
+#'    list, see: 
+#'    https://docs.github.com/en/developers/webhooks-and-events/github-event-types.
+#'    Leave blank to aggregate all event types.
+#' @incl_commits Logical. Should commits be aggregated too (i.e. separately)? 
+#'    Note that commit activity is stored differently to other event data in the
+#'    BigQuery tables and querying them is expensive! See Examples. Default is
+#'    FALSE.
 #' @param users_tab Character string denoting BigQuery table that will be used
 #'    to geo-reference users. Note that the full project.database.table path
 #'    must be provided and the table variables are expected to conform to
@@ -60,44 +69,44 @@
 #'    particular, it expects (and will use) the following variables to match
 #'    users: `login`, `state`, `city`, and `location`. You will need to ensure
 #'    that your bespoke users table contains these variables.
-#' @return A tibble of daily push events
+#' @return A tibble of daily (hourly) event counts
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
 #' @examples
 #' billing = Sys.getenv("GCP_PROJECT_ID") ## Replace this with your project ID
 #' 
-#' ## Example 1: Get daily pushes for whole world in Jan 2021 (i.e. using all 
+#' ## Example 1: Get daily events for whole world in Jan 2020 (i.e. using all 
 #' ## default arguments).
 #' 
 #' # Use dryrun = TRUE to get a sense of how expensive a query will be before
 #' # actually running it.
-#' get_gh_pushes(billing, dryrun = TRUE)
+#' get_gh_activity(billing, dryrun = TRUE)
 #' 
 #' # Including commits has a dramatic impact (costly to extract!)
-#' get_gh_pushes(billing, incl_commits = TRUE, dryrun = TRUE)
+#' get_gh_activity(billing, incl_commits = TRUE, dryrun = TRUE)
 #' 
 #' # Now we actually execute it (excluding commits...)
-#' get_gh_pushes(billing)
+#' get_gh_activity(billing)
 #' 
-#' ## Example 2: Get hourly pushes for Seattle, WA over May 2020, making sure 
-#' ## that we convert the timestamp data from UTC to local (i.e. PST) time. 
-#' ## We'll also request hourly data instead of the default daily data.
-#' get_gh_pushes(billing, 
+#' ## Example 2: Get Push and Issue Comment event data for Seattle, WA over May 
+#' ## 2020. Because of the location, we'll convert the timestamp data from UTC
+#' ## to local (i.e. PST) time. We'll also request hourly data instead of the 
+#' ## default daily data.
+#' get_gh_activity(billing, 
 #'               month = 5, city = 'Seattle', state = 'WA', 
+#'               event_type = c('Push', 'IssueComment')
 #'               tz = 'America/Los_Angeles', hourly = TRUE)
 #'                 
 #' ## Example 3: Reference against a previously-created table of users. This
 #' ## table includes information on both gender and age, so we'll use that to
 #' ## return more granular information.
-#' get_gh_pushes(billing,
+#' get_gh_activity(billing,
 #'               year = 2020, month = 3, tz = 'America/Los_Angeles',
 #'               users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
-#'               gender = TRUE, age_buckets = c(20, 30, 40, 50),
-#'               incl_commits = TRUE,
-#'               dryrun = TRUE)
+#'               gender = TRUE, age_buckets = c(30, 40, 50))
 #' 
 #' @author Grant McDermott
-get_gh_pushes =
+get_gh_activity =
   function(billing=NULL,
            year=NULL, 
            month=NULL, 
@@ -105,7 +114,7 @@ get_gh_pushes =
            state=NULL, state_alias=NULL,
            tz=NULL,
            hourly=FALSE,
-           incl_commits=FALSE,
+           event_type=NULL, incl_commits=FALSE,
            users_tab=NULL,
            gender=FALSE, 
            age=FALSE, age_buckets=NULL,
@@ -127,8 +136,8 @@ get_gh_pushes =
       }
     }
     
+    if (is.null(month) & is.null(year)) {month = 1}
     if (is.null(year)) {year = 2020}
-    if (is.null(month)) {month = 1}
     if (!is.null(month)) {month=sprintf("%02d", month)}
     
     gharchive_dataset = ifelse(is.null(month), "year", "month")
@@ -147,11 +156,11 @@ get_gh_pushes =
     tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
     t_vars = "date"
     t_vars_order = "date ASC"
-    pushes_max = 100
+    events_max = 150
     if (hourly) {
       tz_vars = paste0(tz_vars, ", EXTRACT(HOUR from DATETIME(created_at, '", tz, "')) AS hr")
       t_vars = paste0(t_vars, ", hr")
-      pushes_max = 30
+      events_max = 30
       t_vars_order = "date ASC, hr ASC"
     }
     
@@ -174,27 +183,41 @@ get_gh_pushes =
     
     t_vars = paste0(t_vars, ga_vars)
     
-    ## Which event vars are we tracking? Basically, are we including commit
-    ## events (expensive!). From a query-construction perspective, only matters 
-    ## for right at the end of the query, since will be ignored otherwise...
-    e_vars = "SUM(pushes) AS pushes"
-    if (incl_commits) {
-      e_vars = paste0(e_vars, ",
-                      SUM(commits) AS commits")
-    }
-    
-    pushes_query =
+    events_query =
       glue::glue_sql(
         "
         SELECT
           ", tz_vars, ",
           actor.login as actor_login,
           CAST(JSON_EXTRACT(payload, '$.size') AS INT64) AS commits
-        FROM {`query_tbl`}
-        WHERE type = 'PushEvent'",
+        FROM {`query_tbl`}",
         .con = gharchive_con
       )
+
     
+    ## Which event types are we tracking? Default is all...
+    if (!is.null(event_type)) {
+      
+      event_type = paste0(stringr::str_to_title(event_type), 'Event')
+      
+      ## Add in combined WHERE clause
+      events_query = 
+        glue::glue_sql(
+          events_query, "
+            WHERE type IN ({vals*})",
+          vals = event_type,
+          .con = gharchive_con)
+      
+    }
+    ## Similarly, are we including commit "events" (expensive!). From a 
+    ## query-construction perspective, only matters for right at the end of the 
+    ## query, since this column will be ignored otherwise...
+    e_vars = "SUM(events) AS events"
+    if (incl_commits) {
+      e_vars = paste0(e_vars, ",
+                      SUM(commits) AS commits")
+    }
+        
     
     ## Location-specific users
     location_null = is.null(city) & is.null(state)
@@ -263,15 +286,15 @@ get_gh_pushes =
           SELECT 
           " , t_vars, ", 
             actor_login, 
-            COUNT(*) AS pushes,
+            COUNT(*) AS events,
             SUM(commits) AS commits
           FROM (
-          ({pushes_query}) AS a
+          ({events_query}) AS a
           INNER JOIN ({users_query}) AS b
           ON a.actor_login = b.login
           )
           GROUP BY ", t_vars, ", actor_login
-          HAVING COUNT(*) < ", pushes_max,
+          HAVING COUNT(*) < ", events_max,
           .con = gharchive_con
           )
     
@@ -283,12 +306,12 @@ get_gh_pushes =
           SELECT 
           " , t_vars, ", 
             actor_login, 
-            COUNT(*) AS pushes,
+            COUNT(*) AS events
             SUM(commits) AS commits
           FROM 
-          ({pushes_query}) AS a
+          ({events_query}) AS a
           GROUP BY ", t_vars, ", actor_login
-          HAVING COUNT(*) < ", pushes_max,
+          HAVING COUNT(*) < ", events_max,
           .con = gharchive_con
         )
       
@@ -300,7 +323,7 @@ get_gh_pushes =
           SELECT 
           ", t_vars, ",
           ", e_vars, ",
-          COUNT(actor_login) AS num_users
+          COUNT(actor_login) AS users
           FROM ({join_query})
           GROUP BY ", t_vars, "
           ORDER BY ", t_vars_order,
@@ -332,6 +355,12 @@ get_gh_pushes =
       ## we'd rather just suppress.
       activity_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
       
+      if (is.null(event_type)) {
+        activity_df$event_type = 'all'
+      } else {
+        activity_df$event_type = paste(event_type, collapse = ', ')
+      }
+      
       if (!is.null(users_tab)) {
         activity_df$users_tab = users_tab
         if (!location_null) activity_df$location = location
@@ -345,7 +374,8 @@ get_gh_pushes =
               age_buckets_char[i] = paste0(age_buckets[i-1], "--", age_buckets[i]-1)
             }
           }
-          activity_df$age = age_buckets_char[activity_df$age + 1]
+          activity_df$age = factor(age_buckets_char[activity_df$age + 1],
+                                   levels = age_buckets_char)
         }
       } else {
         activity_df$location = ifelse(location_null, 'Global', location)
