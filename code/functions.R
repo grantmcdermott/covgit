@@ -392,7 +392,8 @@ get_gh_activity =
 # Difference plot ---------------------------------------------------------
 
 daily_diff_plot = 
-  function(data, start_date, end_date) {
+  function(data, y = c('events', 'users'), start_date, end_date) {
+    y = match.arg(y)
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
     ## Get the date offset for comparing year on year (i.e. match weekends with 
@@ -400,16 +401,32 @@ daily_diff_plot =
     ## discontinuities (i.e. start of new week in one year vs old week in 
     ## another).
     date_offset = 365 + median(wday(data$date) - wday(data$date+365)) 
-    suff = gsub("[[:punct:]][[:space:]]", "_", tolower(unique(data$location)))
+    suff = paste0('_', y)
+    if (!is.null(first(data$location))) {
+      suff = paste0(
+        suff, 
+        '_', 
+        gsub("[[:punct:]][[:space:]]", "", tolower(first(data$location)))
+        )
+    }
+    if (!is.null(first(data$users_tab))) {
+      suff = paste0(
+        suff, 
+        '_', 
+        sub('.*\\.', '', first(data$users_tab))
+      )
+    }
     d = copy(data) %>%
-      .[, ':=' (location = NULL, date_offset = date + date_offset)] %>%
-      melt(id.vars = 'pushes') %>%
+      setnames(y, 'y') %>%
+      .[, c('date', 'y')] %>%
+      .[, date_offset := date + date_offset] %>%
+      melt(id.vars = 'y') %>%
       .[value >= start_date & value <= end_date] %>%
-      .[, .(pushes = sum(pushes)), by = .(variable, value)] %>% ## ICO any remaining duplicates
-      dcast(value ~ variable, value.var = 'pushes') %>%
+      .[, .(y = sum(y)), by = .(variable, value)] %>% ## ICO any remaining duplicates
+      dcast(value ~ variable, value.var = 'y') %>%
       .[, Difference := date - date_offset]
     d = 
-      melt(d, id.vars = 'value', value.name = 'pushes') %>%
+      melt(d, id.vars = 'value', value.name = 'y') %>%
       .[, grp := fifelse(variable=='date', 
                          paste(year(value)),  
                          fifelse(variable=='date_offset', 
@@ -417,13 +434,13 @@ daily_diff_plot =
                                  paste(variable)))] %>%
       .[, pnl := factor(fifelse(variable=='Difference', 'diff', 'main'), levels = c('main', 'diff'))]
     p =
-      ggplot(d, aes(value, pushes, col = grp, fill = grp, group = grp)) + 
+      ggplot(d, aes(value, y, col = grp, fill = grp, group = grp)) + 
       geom_line() +
       geom_area(data = d[pnl=='diff'], alpha = 0.3, show.legend = FALSE) +
       scale_x_date(date_breaks = '1 month', date_labels = '%b') +
       scale_y_continuous(labels = scales::comma) +
       scale_colour_brewer(palette = 'Set2', aesthetics = c('colour', 'fill')) +
-      labs(y = 'No. of pushes') +
+      labs(y = paste('No. of', y)) +
       theme(
         axis.title.x = element_blank(),
         strip.text = element_blank(),
@@ -431,6 +448,7 @@ daily_diff_plot =
         legend.position = 'bottom'
         ) + 
       facet_wrap(~pnl, ncol = 1, scales = 'free_y')
-    p + ggsave(here('figs', paste0(suff, '-diff.png')), width = 8, height =5)
-    p + ggsave(here('figs/PDF', paste0(suff, '-diff.pdf')), width = 8, height =5, device = cairo_pdf)
+    # p + ggsave(here('figs', paste0(suff, '-diff.png')), width = 8, height =5)
+    # p + ggsave(here('figs/PDF', paste0(suff, '-diff.pdf')), width = 8, height =5, device = cairo_pdf)
+    print(p)
   }
