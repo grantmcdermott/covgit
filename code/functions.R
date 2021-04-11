@@ -578,6 +578,7 @@ daily_diff_plot =
         legend.title = element_blank(),
         legend.position = 'bottom'
         ) + 
+      labs(title = suff) +
       facet_wrap(~pnl, ncol = 1, scales = 'free_y')
     # p + ggsave(here('figs', paste0(suff, '-diff.png')), width = 8, height =5)
     # p + ggsave(here('figs/PDF', paste0(suff, '-diff.pdf')), width = 8, height =5, device = cairo_pdf)

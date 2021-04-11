@@ -114,10 +114,10 @@ plan =
     
     ## Plot the difference between the early 2019 and 2020 San Francisco data
     sfo_diff_plot_events = daily_diff_plot(
-      sea, y = 'events', start_date = '2020-01-02', end_date = '2020-05-31'
+      sfo, y = 'events', start_date = '2020-01-02', end_date = '2020-05-31'
       ),
     sfo_diff_plot_users = daily_diff_plot(
-      sea, y = 'users', start_date = '2020-01-02', end_date = '2020-05-31'
+      sfo, y = 'users', start_date = '2020-01-02', end_date = '2020-05-31'
       ),
 
 # Seattle -----------------------------------------------------------------
