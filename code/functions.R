@@ -359,9 +359,6 @@ get_gh_activity =
       
     } else {
       
-      message("Running main query for daily push activity for the period ", 
-              query_tbl, ".\n")
-      
       ## Below query will give annoying warning about SQL to S4 class conversion, 
       ## we'd rather just suppress.
       activity_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))

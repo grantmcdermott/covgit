@@ -193,7 +193,9 @@ plan =
         tz = 'America/Los_Angeles',
         users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'
         ))
-      )[, .(pushes = sum(pushes)), by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
+      )[, 
+        .(events = sum(events), users = max(users)), 
+        by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
 
     sea20_cohort = rbind(
       as.data.table(get_gh_activity(
@@ -210,7 +212,9 @@ plan =
         tz = 'America/Los_Angeles',
         users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'
         ))
-      )[, .(pushes = sum(pushes)), by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
+      )[, 
+        .(events = sum(events), users = max(users)), 
+        by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
     
     # Join Seattle cohort data
     sea_cohort = rbind(sea19_cohort, sea20_cohort)[, location := paste(location, 'cohort')],
@@ -251,7 +255,7 @@ plan =
         age_buckets = c(30, 40, 50)
       ))
     )[, 
-      .(pushes = sum(pushes), commits = sum(commits), num_users = max(num_users)), 
+      .(events = sum(events), users = max(users)), 
       by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
   
     sea20_linkedin = rbind(
@@ -274,7 +278,7 @@ plan =
         age_buckets = c(30, 40, 50)
         ))
       )[, 
-      .(pushes = sum(pushes), commits = sum(commits), num_users = max(num_users)), 
+      .(events = sum(events), users = max(users)), 
       by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
   
     # Join Seattle cohort data
