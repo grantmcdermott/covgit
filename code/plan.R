@@ -14,7 +14,7 @@ plan =
       )[, lapply(.SD, sum), by = .(country_code)][order(-users)] %>%
       .[, year := 2020],
     
-    c_all_sum = rbind(c19_summ, c20_summ),
+    c_all_summ = rbind(c19_summ, c20_summ),
     
     ## Country by date
     c19 = rbind(
