@@ -3,14 +3,14 @@ plan =
     
     ## Countries (summarised by year)
     c19_summ = rbind(
-      as.data.table(get_gh_activity_country(billing, year = 2019, month = 1)),
-      as.data.table(get_gh_activity_country(billing, year = 2019))
+      get_gh_activity_country(billing, year = 2019, month = 1),
+      get_gh_activity_country(billing, year = 2019)
       )[, lapply(.SD, sum), by = .(country_code)][order(-users)] %>%
       .[, year := 2019],
     
     c20_summ = rbind(
-      as.data.table(get_gh_activity_country(billing, year = 2020, month = 1)),
-      as.data.table(get_gh_activity_country(billing, year = 2020))
+      get_gh_activity_country(billing, year = 2020, month = 1),
+      get_gh_activity_country(billing, year = 2020)
       )[, lapply(.SD, sum), by = .(country_code)][order(-users)] %>%
       .[, year := 2020],
     
@@ -18,19 +18,29 @@ plan =
     
     ## Country by date
     c19 = rbind(
-      as.data.table(get_gh_activity_country(
-        billing, year = 2019, month = 1, excl_nulls = TRUE, by_date = TRUE
-        )),
-      as.data.table(get_gh_activity_country(
-        billing, year = 2019, excl_nulls = TRUE, by_date = TRUE))
+      get_gh_activity_country(
+        billing, 
+        year = 2019, month = 1, 
+        excl_nulls = TRUE, by_date = TRUE
+        ),
+      get_gh_activity_country(
+        billing, 
+        year = 2019, 
+        excl_nulls = TRUE, by_date = TRUE
+        )
       ),
     
     c20 = rbind(
-      as.data.table(get_gh_activity_country(
-        billing, year = 2020, month = 1, excl_nulls = TRUE, by_date = TRUE
-      )),
-      as.data.table(get_gh_activity_country(
-        billing, year = 2020, excl_nulls = TRUE, by_date = TRUE))
+      get_gh_activity_country(
+        billing, 
+        year = 2020, month = 1, 
+        excl_nulls = TRUE, by_date = TRUE
+        ),
+      get_gh_activity_country(
+        billing, 
+        year = 2020, 
+        excl_nulls = TRUE, by_date = TRUE
+        )
       ),
     
     c_all = rbind(c19, c20),
@@ -41,14 +51,14 @@ plan =
 
     ## Get 2020 global event data
     g20 = rbind(
-      as.data.table(get_gh_activity(billing, year = 2020, month = 1)), 
-      as.data.table(get_gh_activity(billing, year = 2020))
+      get_gh_activity(billing, year = 2020, month = 1), 
+      get_gh_activity(billing, year = 2020)
       ),
     
     ## Get 2019 global event data
     g19 = rbind(
-      as.data.table(get_gh_activity(billing, year = 2019, month = 1)), 
-      as.data.table(get_gh_activity(billing, year = 2019))
+      get_gh_activity(billing, year = 2019, month = 1), 
+      get_gh_activity(billing, year = 2019)
       ),
     
     ## Join global data tables
@@ -72,39 +82,39 @@ plan =
 
     ## Get 2019 Seattle data
     sfo19 = rbind(
-      as.data.table(get_gh_activity(
+      get_gh_activity(
         billing,
         year = 2019, month = 1, 
         city = 'San Francisco', state = 'CA',
         tz = 'America/Los_Angeles'
-      )), 
-      as.data.table(get_gh_activity(
+        ), 
+      get_gh_activity(
         billing,
         year = 2019, 
         city = 'San Francisco', state = 'CA',
         tz = 'America/Los_Angeles'
-      ))
+        )
     )[, 
       .(events = sum(events), users = max(users)), 
       by = .(date, location, users_tab, event_type)], ## Need to aggregate Jan 31st TZ overlaps
     
     ## Get 2020 Seattle data
     sfo20 = rbind(
-      as.data.table(get_gh_activity(
+      get_gh_activity(
         billing,
         year = 2020, month = 1, 
         city = 'San Francisco', state = 'CA',
         tz = 'America/Los_Angeles'
-      )), 
-      as.data.table(get_gh_activity(
+        ), 
+      get_gh_activity(
         billing,
         year = 2020, 
         city = 'San Francisco', state = 'CA',
         tz = 'America/Los_Angeles'
-      ))
-    )[, 
-      .(events = sum(events), users = max(users)), 
-      by = .(date, location, users_tab, event_type)], ## Need to aggregate Jan 31st TZ overlaps
+        )
+      )[, 
+        .(events = sum(events), users = max(users)), 
+        by = .(date, location, users_tab, event_type)], ## Need to aggregate Jan 31st TZ overlaps
     
     ## Join San Francisco data tables
     sfo = rbind(sfo19, sfo20),
@@ -124,36 +134,36 @@ plan =
     
     ## Get 2019 Seattle data
     sea19 = rbind(
-      as.data.table(get_gh_activity(
+      get_gh_activity(
         billing,
         year = 2019, month = 1, 
         city = 'Seattle', state = 'WA',
         tz = 'America/Los_Angeles'
-      )), 
-      as.data.table(get_gh_activity(
+        ), 
+      get_gh_activity(
         billing,
         year = 2019, 
         city = 'Seattle', state = 'WA',
         tz = 'America/Los_Angeles'
-      ))
-    )[, 
-      .(events = sum(events), users = max(users)), 
-      by = .(date, location, users_tab, event_type)], ## Need to aggregate Jan 31st TZ overlaps
+        )
+      )[, 
+        .(events = sum(events), users = max(users)), 
+        by = .(date, location, users_tab, event_type)], ## Need to aggregate Jan 31st TZ overlaps
 
     ## Get 2020 Seattle data
     sea20 = rbind(
-      as.data.table(get_gh_activity(
-          billing,
-          year = 2020, month = 1, 
-          city = 'Seattle', state = 'WA',
-          tz = 'America/Los_Angeles'
-          )), 
-      as.data.table(get_gh_activity(
+      get_gh_activity(
+        billing,
+        year = 2020, month = 1, 
+        city = 'Seattle', state = 'WA',
+        tz = 'America/Los_Angeles'
+        ), 
+      get_gh_activity(
         billing,
         year = 2020, 
         city = 'Seattle', state = 'WA',
         tz = 'America/Los_Angeles'
-        ))
+        )
       )[, 
         .(events = sum(events), users = max(users)), 
         by = .(date, location, users_tab, event_type)], ## Need to aggregate Jan 31st TZ overlaps
@@ -179,39 +189,39 @@ plan =
     ## active during January 2019. In other words, we follow the exact same 
     ## users through and try to isolate the intensive margin for this cohort.
     sea19_cohort = rbind(
-      as.data.table(get_gh_activity(
+      get_gh_activity(
         billing,
         year = 2019, month = 1, 
         city = 'Seattle', state = 'WA',
         tz = 'America/Los_Angeles',
         users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'
-        )), 
-      as.data.table(get_gh_activity(
+        ), 
+      get_gh_activity(
         billing,
         year = 2019, 
         city = 'Seattle', state = 'WA',
         tz = 'America/Los_Angeles',
         users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'
-        ))
+        )
       )[, 
         .(events = sum(events), users = max(users)), 
         by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
 
     sea20_cohort = rbind(
-      as.data.table(get_gh_activity(
+      get_gh_activity(
         billing,
         year = 2020, month = 1, 
         city = 'Seattle', state = 'WA',
         tz = 'America/Los_Angeles',
         users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'
-        )), 
-      as.data.table(get_gh_activity(
+        ), 
+      get_gh_activity(
         billing,
         year = 2020, 
         city = 'Seattle', state = 'WA',
         tz = 'America/Los_Angeles',
         users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'
-        ))
+        )
       )[, 
         .(events = sum(events), users = max(users)), 
         by = .(date, location)], ## Need to aggregate again b/c of TZ overlaps
@@ -236,7 +246,7 @@ plan =
     ## As above, but this time on a subset of users matched to a LinkedIn profile.
     ## Allows us to categorise by age and gender.
     sea19_linkedin = rbind(
-      as.data.table(get_gh_activity(
+      get_gh_activity(
         billing,
         year = 2019, month = 1, 
         # city = 'Seattle', state = 'WA',
@@ -244,8 +254,8 @@ plan =
         users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
         gender = TRUE, 
         age_buckets = c(30, 40, 50)
-      )), 
-      as.data.table(get_gh_activity(
+        ), 
+      get_gh_activity(
         billing,
         year = 2019,
         # city = 'Seattle', state = 'WA',
@@ -253,13 +263,13 @@ plan =
         users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
         gender = TRUE, 
         age_buckets = c(30, 40, 50)
-      ))
-    )[, 
-      .(events = sum(events), users = max(users)), 
-      by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
+        )
+      )[, 
+        .(events = sum(events), users = max(users)), 
+        by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
   
     sea20_linkedin = rbind(
-      as.data.table(get_gh_activity(
+      get_gh_activity(
         billing,
         year = 2020, month = 1, 
         # city = 'Seattle', state = 'WA',
@@ -267,8 +277,8 @@ plan =
         users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
         gender = TRUE, 
         age_buckets = c(30, 40, 50)
-        )), 
-      as.data.table(get_gh_activity(
+        ), 
+      get_gh_activity(
         billing,
         year = 2020,
         # city = 'Seattle', state = 'WA',
@@ -276,10 +286,10 @@ plan =
         users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
         gender = TRUE, 
         age_buckets = c(30, 40, 50)
-        ))
+        )
       )[, 
-      .(events = sum(events), users = max(users)), 
-      by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
+        .(events = sum(events), users = max(users)), 
+        by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
   
     # Join Seattle cohort data
     sea_linkedin = rbind(sea19_linkedin, sea20_linkedin)[, location := 'seattle_linkedin'],

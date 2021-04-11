@@ -1,3 +1,26 @@
+# completeDT --------------------------------------------------------------
+
+## Borrowed/adapted from here: https://stackoverflow.com/a/66523199/4115816
+
+completeDT <- function(DT, cols, defs = NULL) {
+  
+  make_vals <- function(col) {
+    if (is.factor(col)) factor(levels(col))
+    if (inherits(col, 'Date')) seq(min(col), max(col), by = '1 day')
+    else unique(col)
+  }
+  
+  mDT = do.call(CJ, c(lapply(DT[, ..cols], make_vals), list(unique=TRUE)))
+  res = DT[mDT, on=names(mDT)]
+  if (length(defs)) {
+    res[, 
+        names(defs) := Map(replace, .SD, lapply(.SD, is.na), defs), 
+        .SDcols=names(defs)] 
+  }
+  res[]
+} 
+
+
 # get_gh_activity -----------------------------------------------------------
 
 #' Get counts of daily GitHub push (and commit) activity using Google BigQuery.
@@ -71,7 +94,7 @@
 #'    particular, it expects (and will use) the following variables to match
 #'    users: `login`, `state`, `city`, and `location`. You will need to ensure
 #'    that your bespoke users table contains these variables.
-#' @return A tibble of daily (hourly) event counts
+#' @return A data.table of daily (hourly) event counts
 #' @seealso [bigrquery::bigquery()] which this function wraps.
 #' @export
 #' @examples
@@ -361,17 +384,18 @@ get_gh_activity =
       
       ## Below query will give annoying warning about SQL to S4 class conversion, 
       ## we'd rather just suppress.
-      activity_df = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
+      activity_dt = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
+      setDT(activity_dt)
       
       if (is.null(event_type)) {
-        activity_df$event_type = 'all'
+        activity_dt$event_type = 'all'
       } else {
-        activity_df$event_type = paste(event_type, collapse = ', ')
+        activity_dt$event_type = paste(event_type, collapse = ', ')
       }
       
       if (!is.null(users_tab)) {
-        activity_df$users_tab = users_tab
-        if (!location_null) activity_df$location = location
+        activity_dt$users_tab = users_tab
+        if (!location_null) activity_dt$location = location
         if (!is.null(age_buckets)) {
           eb = length(age_buckets)+1
           age_buckets_char = c(paste(age_buckets), age_buckets[eb-1])
@@ -382,14 +406,20 @@ get_gh_activity =
               age_buckets_char[i] = paste0(age_buckets[i-1], "--", age_buckets[i]-1)
             }
           }
-          activity_df$age = factor(age_buckets_char[activity_df$age + 1],
+          activity_dt$age = factor(age_buckets_char[activity_dt$age + 1],
                                    levels = age_buckets_char)
         }
       } else {
-        activity_df$location = ifelse(location_null, 'Global', location)
+        activity_dt$location = ifelse(location_null, 'Global', location)
       }
       
-      return(activity_df)
+      ## Complete implicit missing values
+      jnames = names(activity_dt[, !c('users', 'events')])
+      activity_dt = completeDT(activity_dt, 
+                               cols = jnames, 
+                               defs = c(events = 0, users = 0))
+      
+      return(activity_dt)
     }
     
     DBI::dbDisconnect(gharchive_con)
@@ -511,6 +541,13 @@ get_gh_activity_country =
       ## Below query will give annoying warning about SQL to S4 class conversion, 
       ## we'd rather just suppress.
       activity_country = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
+      setDT(activity_country)
+      
+      ## Complete implicit missing values
+      jnames = names(activity_country[, !c('users', 'events')])
+      activity_country = completeDT(activity_country, 
+                                    cols = jnames, 
+                                    defs = c(events = 0, users = 0))
       
       return(activity_country)
     }
