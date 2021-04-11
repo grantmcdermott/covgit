@@ -35,7 +35,7 @@ plan =
     
     c_all = rbind(c19, c20),
     
-    fwrite(c_all, here('data/countries-all.csv')),
+    write_countries_all = fwrite(c_all, here('data/countries-all.csv')),
 
 # Global ------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ plan =
     g = rbind(g19, g20),
     
     ## Write to disk
-    fwrite(g, here('data/global.csv')),
+    write_global = fwrite(g, here('data/global.csv')),
     
     ## Plot the difference between the early 2019 and 2020 global data.
     ## Note that we start in mid-Feb to avoid the weird bump in user activity
@@ -110,7 +110,7 @@ plan =
     sfo = rbind(sfo19, sfo20),
     
     ## Write to disk
-    fwrite(sfo, here('data/sfo.csv')),
+    write_sfo = fwrite(sfo, here('data/sfo.csv')),
     
     ## Plot the difference between the early 2019 and 2020 San Francisco data
     sfo_diff_plot_events = daily_diff_plot(
@@ -162,7 +162,7 @@ plan =
     sea = rbind(sea19, sea20),
     
     ## Write to disk
-    fwrite(sea, here('data/sea.csv')),
+    write_sea = fwrite(sea, here('data/sea.csv')),
     
     ## Plot the difference between the early 2019 and 2020 Seattle data
     sea_diff_plot_events = daily_diff_plot(
@@ -216,7 +216,7 @@ plan =
     sea_cohort = rbind(sea19_cohort, sea20_cohort)[, location := paste(location, 'cohort')],
     
     ## Write to disk
-    fwrite(sea_cohort, here('data/sea-cohort.csv')),
+    write_sea_cohort = fwrite(sea_cohort, here('data/sea-cohort.csv')),
     
     ## Diff plot
     sea_cohort_diff_plot_events = daily_diff_plot(
@@ -229,67 +229,66 @@ plan =
 
 # Seattle (matched linkedin) ----------------------------------------------
 
-  ## As above, but this time on a subset of users matched to a LinkedIn profile.
-  ## Allows us to categorise by age and gender.
-  sea19_linkedin = rbind(
-    as.data.table(get_gh_activity(
-      billing,
-      year = 2019, month = 1, 
-      # city = 'Seattle', state = 'WA',
-      tz = 'America/Los_Angeles',
-      users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
-      gender = TRUE, 
-      age_buckets = c(30, 40, 50)
-    )), 
-    as.data.table(get_gh_activity(
-      billing,
-      year = 2019,
-      # city = 'Seattle', state = 'WA',
-      tz = 'America/Los_Angeles',
-      users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
-      gender = TRUE, 
-      age_buckets = c(30, 40, 50)
-    ))
-  )[, 
-    .(pushes = sum(pushes), commits = sum(commits), num_users = max(num_users)), 
-    by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
-
-  sea20_linkedin = rbind(
-    as.data.table(get_gh_activity(
-      billing,
-      year = 2020, month = 1, 
-      # city = 'Seattle', state = 'WA',
-      tz = 'America/Los_Angeles',
-      users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
-      gender = TRUE, 
-      age_buckets = c(30, 40, 50)
+    ## As above, but this time on a subset of users matched to a LinkedIn profile.
+    ## Allows us to categorise by age and gender.
+    sea19_linkedin = rbind(
+      as.data.table(get_gh_activity(
+        billing,
+        year = 2019, month = 1, 
+        # city = 'Seattle', state = 'WA',
+        tz = 'America/Los_Angeles',
+        users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
+        gender = TRUE, 
+        age_buckets = c(30, 40, 50)
       )), 
-    as.data.table(get_gh_activity(
-      billing,
-      year = 2020,
-      # city = 'Seattle', state = 'WA',
-      tz = 'America/Los_Angeles',
-      users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
-      gender = TRUE, 
-      age_buckets = c(30, 40, 50)
+      as.data.table(get_gh_activity(
+        billing,
+        year = 2019,
+        # city = 'Seattle', state = 'WA',
+        tz = 'America/Los_Angeles',
+        users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
+        gender = TRUE, 
+        age_buckets = c(30, 40, 50)
       ))
     )[, 
-    .(pushes = sum(pushes), commits = sum(commits), num_users = max(num_users)), 
-    by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
-
-  # Join Seattle cohort data
-  sea_linkedin = rbind(sea19_linkedin, sea20_linkedin)[, location := 'seattle_linkedin'],
+      .(pushes = sum(pushes), commits = sum(commits), num_users = max(num_users)), 
+      by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
   
-  ## Write to disk
-  fwrite(sea_linkedin, here('data/sea-linkedin.csv')),
+    sea20_linkedin = rbind(
+      as.data.table(get_gh_activity(
+        billing,
+        year = 2020, month = 1, 
+        # city = 'Seattle', state = 'WA',
+        tz = 'America/Los_Angeles',
+        users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
+        gender = TRUE, 
+        age_buckets = c(30, 40, 50)
+        )), 
+      as.data.table(get_gh_activity(
+        billing,
+        year = 2020,
+        # city = 'Seattle', state = 'WA',
+        tz = 'America/Los_Angeles',
+        users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
+        gender = TRUE, 
+        age_buckets = c(30, 40, 50)
+        ))
+      )[, 
+      .(pushes = sum(pushes), commits = sum(commits), num_users = max(num_users)), 
+      by = .(date, gender, age, users_tab)], ## Need to aggregate again b/c of a few TZ overlaps
   
-  ## Diff plot
-  sea_linkedin_diff_plot_events = daily_diff_plot(
-    sea_linkedin, y = 'events', start_date = '2020-01-02', end_date = '2020-05-31'
-    ),
-  sea_linkedin_diff_plot_users = daily_diff_plot(
-    sea_linkedin, y = 'users', start_date = '2020-01-02', end_date = '2020-05-31'
-    ),
+    # Join Seattle cohort data
+    sea_linkedin = rbind(sea19_linkedin, sea20_linkedin)[, location := 'seattle_linkedin'],
+    
+    ## Write to disk
+    write_sea_linkedin = fwrite(sea_linkedin, here('data/sea-linkedin.csv')),
+    
+    ## Diff plot
+    sea_linkedin_diff_plot_events = daily_diff_plot(
+      sea_linkedin, y = 'events', start_date = '2020-01-02', end_date = '2020-05-31'
+      ),
+    sea_linkedin_diff_plot_users = daily_diff_plot(
+      sea_linkedin, y = 'users', start_date = '2020-01-02', end_date = '2020-05-31'
+      )
   
   )
-
