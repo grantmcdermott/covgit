@@ -12,6 +12,8 @@
 #' @param year An integer between 2017 and the current year. Defaults to 2020.
 #' @param month An integer between 1 and 12. If no argument is provided
 #'    the function will query data from the entire year.
+#' @param day An integer between corresponding to the day of month. Ignored if
+#'    the `month` argument is not provided.
 #' @param city A character string, e.g. 'San Francisco' describing the 
 #'    particular geographic area of interest. Ignore this argument if you'd like
 #'    to query data from the entire globe.
@@ -106,20 +108,22 @@
 #'               gender = TRUE, age_buckets = c(30, 40, 50))
 #' 
 #' @author Grant McDermott
+#' 
 get_gh_activity =
-  function(billing=NULL,
-           year=NULL, 
-           month=NULL, 
-           city=NULL, city_alias=NULL, 
-           state=NULL, state_alias=NULL,
-           tz=NULL,
-           hourly=FALSE,
-           event_type=NULL, incl_commits=FALSE,
-           users_tab=NULL,
-           gender=FALSE, 
-           age=FALSE, age_buckets=NULL,
-           verbose=FALSE,
-           dryrun=FALSE) {
+  function(
+    billing = NULL,
+    year = NULL, month = NULL, day = NULL,
+    city = NULL, city_alias=NULL, 
+    state = NULL, state_alias=NULL,
+    tz = NULL,
+    hourly = FALSE,
+    event_type = NULL, incl_commits = FALSE,
+    users_tab = NULL,
+    gender = FALSE, 
+    age = FALSE, age_buckets = NULL,
+    verbose = FALSE,
+    dryrun = FALSE
+    ) {
     
     if (is.null(billing)) stop("Please provide a GCP project ID for billing.")
     
@@ -136,11 +140,18 @@ get_gh_activity =
       }
     }
     
-    if (is.null(month) & is.null(year)) {month = 1}
-    if (is.null(year)) {year = 2020}
-    if (!is.null(month)) {month=sprintf("%02d", month)}
+    if (is.null(year)) {
+      year = 2020
+      if (is.null(month)) month = 1
+      }
+    if (!is.null(month)) {
+      month = sprintf("%02d", month)
+      if (!is.null(day)) day = sprintf("%02d", day)
+      }
     
-    gharchive_dataset = ifelse(is.null(month), "year", "month")
+    gharchive_dataset = ifelse(!is.null(day), 
+                               "day",
+                               ifelse(!is.null(month), "month", "year"))
     
     gharchive_con = 
       DBI::dbConnect(
@@ -150,7 +161,7 @@ get_gh_activity =
         billing = billing
         )
     
-    query_tbl = paste0(year, month)
+    query_tbl = paste0(year, month, day)
     
     ## Aggregate at daily or hourly level?
     tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
@@ -190,7 +201,8 @@ get_gh_activity =
           ", tz_vars, ",
           actor.login as actor_login,
           CAST(JSON_EXTRACT(payload, '$.size') AS INT64) AS commits
-        FROM {`query_tbl`}",
+        FROM {`query_tbl`}
+        WHERE EXTRACT(YEAR FROM DATE(created_at, '", tz, "')) = {year}",
         .con = gharchive_con
       )
 
@@ -203,8 +215,7 @@ get_gh_activity =
       ## Add in combined WHERE clause
       events_query = 
         glue::glue_sql(
-          events_query, "
-            WHERE type IN ({vals*})",
+          events_query, " AND type IN ({vals*})",
           vals = event_type,
           .con = gharchive_con)
       
@@ -330,7 +341,7 @@ get_gh_activity =
         .con = gharchive_con
       )
     
-    dry_q = gsub(query_tbl, 
+    dry_q = gsub(paste0("`", query_tbl, "`"), 
                  paste("githubarchive", gharchive_dataset, query_tbl, sep = "."),
                  full_query)
     
@@ -382,6 +393,129 @@ get_gh_activity =
       }
       
       return(activity_df)
+    }
+    
+    DBI::dbDisconnect(gharchive_con)
+    
+  }
+
+
+
+# get_gh_activity_country -------------------------------------------------
+
+## Easier just to write a separate query function for this case. Here we want
+## to get the total number of events and users *by country*, potentially by date
+## (i.e. day) but otherwise over the entire period provided.
+
+get_gh_activity_country = 
+  function(
+    billing = NULL,
+    year = NULL,
+    month = NULL,
+    day = NULL,
+    tz = NULL,
+    by_date = FALSE,
+    excl_nulls = FALSE,
+    verbose = FALSE,
+    dryrun = FALSE
+    ) {
+    
+    if (is.null(billing)) stop("Please provide a GCP project ID for billing.")
+    
+    if (is.null(tz)) {
+      tz='UTC'
+      message('No timezone provided. All dates and times defaulting to UTC.')
+    } else {
+      ## Check that given tz at least matches one of R's built-in list pairs
+      if (tz %in% OlsonNames()) {
+        message('Dates and times will be converted to timezone: ', tz)
+      } else {
+        stop("Unexpected timezone: ", tz, 
+             "\nTry picking one from `OlsonNames()` (print it in your R console).")
+      }
+    }
+    
+    if (is.null(year)) {
+      year = 2020
+      if (is.null(month)) month = 1
+    }
+    if (!is.null(month)) {
+      month = sprintf("%02d", month)
+      if (!is.null(day)) day = sprintf("%02d", day)
+    }
+    
+    gharchive_dataset = ifelse(!is.null(day), 
+                               "day",
+                               ifelse(!is.null(month), "month", "year"))
+    
+    gharchive_con = 
+      DBI::dbConnect(
+        bigrquery::bigquery(),
+        project = "githubarchive",
+        dataset = gharchive_dataset,
+        billing = billing
+      )
+    
+    query_tbl = paste0(year, month, day)
+    
+    
+    users_query =
+      glue::glue_sql(
+        "SELECT login, country_code,
+        FROM `ghtorrentmysql1906.MySQL1906.users`",
+        .con = DBI::ANSI() ## https://github.com/tidyverse/glue/issues/120
+        )
+    if (excl_nulls) {
+      users_query =
+        glue::glue_sql(
+        users_query, "
+        WHERE country_code IS NOT NULL"
+        )
+    }
+    
+    grp_vars = if (by_date) c("date", "country_code") else "country_code"
+
+    full_query = 
+      glue::glue_sql(
+        "SELECT 
+        {`grp_vars`*},
+        COUNT (DISTINCT actor_login) AS users, 
+        COUNT(*) AS events
+        FROM (
+        (SELECT
+        DATE(created_at, {tz}) AS date,
+        actor.login as actor_login,
+        FROM {`query_tbl`}
+        WHERE EXTRACT(YEAR FROM DATE(created_at, {tz})) = {year}) AS a
+        INNER JOIN ({users_query}) AS b
+        ON a.actor_login = b.login
+        )
+        GROUP BY {`grp_vars`*}
+        ORDER BY {`grp_vars`*}",
+        .con = gharchive_con
+        )
+    
+    dry_q = gsub(paste0("`", query_tbl, "`"), 
+                 paste("githubarchive", gharchive_dataset, query_tbl, sep = "."),
+                 full_query)
+    
+    if (verbose) message(dry_q, "\n")
+    
+    if (dryrun) {
+      
+      qsize = suppressWarnings(bq_perform_query_dry_run(dry_q, billing = billing))
+      tbytes = grepl("TB", qsize)
+      qcost = sprintf("$%.2f", qsize * 5 / 1e12)  ## $5 per TB
+      message("Query will process: ", prettyunits::pretty_bytes(unclass(qsize)), 
+              "\nEstimated cost: ", qcost, "\n")
+      
+    } else {
+      
+      ## Below query will give annoying warning about SQL to S4 class conversion, 
+      ## we'd rather just suppress.
+      activity_country = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
+      
+      return(activity_country)
     }
     
     DBI::dbDisconnect(gharchive_con)
