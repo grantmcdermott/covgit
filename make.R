@@ -15,7 +15,7 @@ library(here)
 # Environment variables ---------------------------------------------------
 
 billing = Sys.getenv("GCE_DEFAULT_PROJECT_ID")
-bq_auth("GCE_AUTH_FILE")
+bq_auth(path = Sys.getenv("GCE_AUTH_FILE"))
 
 
 # Scripts -----------------------------------------------------------------
