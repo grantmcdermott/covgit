@@ -145,7 +145,8 @@ get_gh_activity =
     gender = FALSE, 
     age = FALSE, age_buckets = NULL,
     verbose = FALSE,
-    dryrun = FALSE
+    dryrun = FALSE,
+    ...
     ) {
     
     if (is.null(billing)) stop("Please provide a GCP project ID for billing.")
@@ -425,6 +426,56 @@ get_gh_activity =
     DBI::dbDisconnect(gharchive_con)
     
   }
+
+
+
+# get_gh_activity_year ----------------------------------------------------
+
+## A lightweight wrapper around get_gh_activity() designed to take care of
+## one major annoyance: Each githubarchive "year" table includes the wrong 
+## January data. Which is to say that includes January data for the subsequent
+## year, but not for the actual year. All arguments passed on to 
+## get_gh_activity(), except for the one additional "location_add" argument that
+## can be used to add location data for user tables that don't provide this
+## information.
+## Usage example:
+## g = rbindlist(lapply(
+##   2015:2020, function(y) {
+##     get_gh_activity_year(billing = billing, year = y)
+##   }
+## ))
+get_gh_activity_year =
+  function (location_add = NULL, ...) {
+    
+    dots = list(...)
+    
+    DT = rbind(
+      get_gh_activity(month = 1, ...), 
+      get_gh_activity(...)
+    )
+    
+    scols = 'events'
+    
+    if (!is.null(dots$incl_commits)) {
+      if (dots$incl_commits) {
+        scols = c(scols, 'commits')
+      }
+    }
+    
+    if (!("location" %in% names(DT))) {
+      DT$location = ifelse(!is.null(location_add), location_add, "unknown")
+    }
+    
+    gcols = c('date', 'hr', 'location', 'users_tab', 'event_type')
+    gcols = intersect(gcols, names(DT))
+    
+    DT[, 
+       c(lapply(.SD, sum), list(users=max(users))),
+       .SDcols = scols,
+       by = gcols]
+    
+  }
+
 
 
 
