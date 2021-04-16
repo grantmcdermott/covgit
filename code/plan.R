@@ -70,6 +70,33 @@ plan =
       ),
 
 
+# New York ----------------------------------------------------------------
+
+    ## Get 2015--2020 (hourly) NYC data
+    nyc = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y,
+          hourly = TRUE,
+          city = 'New York', state = 'NY',
+          tz = 'America/New_York'
+        )
+        }
+      )),
+    
+    ## Write to disk
+    write_nyc = write_fst(nyc, here('data/nyc.fst')),
+    
+    ## Plot the difference between the early 2019 and 2020 NYC data
+    nyc_diff_plot_events = daily_diff_plot(
+      nyc[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
+      y = 'events', start_date = '2020-01-02', end_date = '2020-05-31'
+      ),
+    nyc_diff_plot_users = daily_diff_plot(
+      nyc[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
+      y = 'users', start_date = '2020-01-02', end_date = '2020-05-31'
+      ),
+
 # San Francisco ------------------------------------------------------------
 
     ## Get 2015--2020 (hourly) San Francisco data
