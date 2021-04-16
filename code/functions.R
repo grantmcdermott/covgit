@@ -451,7 +451,7 @@ get_gh_activity_year =
     
     DT = rbind(
       get_gh_activity(month = 1, ...), 
-      get_gh_activity(...)
+      get_gh_activity(...)[month(date)!=1]
     )
     
     scols = 'events'
