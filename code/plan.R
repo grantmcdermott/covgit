@@ -1,37 +1,6 @@
 plan =
   drake_plan(
     
-    ## All countries by date
-    all = rbind(
-      get_gh_activity_country(
-        billing, 
-        year = 2019, month = 1, 
-        excl_nulls = TRUE, by_date = TRUE
-        ),
-      get_gh_activity_country(
-        billing, 
-        year = 2019, 
-        excl_nulls = TRUE, by_date = TRUE
-        )
-      ),
-    
-    c20 = rbind(
-      get_gh_activity_country(
-        billing, 
-        year = 2020, month = 1, 
-        excl_nulls = TRUE, by_date = TRUE
-        ),
-      get_gh_activity_country(
-        billing, 
-        year = 2020, 
-        excl_nulls = TRUE, by_date = TRUE
-        )
-      ),
-    
-    c_all = rbind(c19, c20),
-    
-    write_countries_all = write_fst(c_all, here('data/countries-all.fst')),
-
 # Global ------------------------------------------------------------------
 
     ## Get 2015--2020 global activity data
@@ -184,7 +153,7 @@ plan =
 
     ## As above, but this time on a subset of users matched to a LinkedIn profile.
     ## Allows us to categorise by age and gender.
-    sea_cohort = rbindlist(lapply(
+    sea_linkedin = rbindlist(lapply(
       2015:2020, function(y) {
         get_gh_activity_year(
           billing = billing, year = y,
