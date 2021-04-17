@@ -31,7 +31,7 @@ plan =
       2015:2020, function(y) {
         get_gh_activity_year(billing = billing, year = y, by_country = TRUE)
         }
-      ))[order(country_code, date)],
+      ))[!is.na(country_code), location := country_code][order(country_code, date)],
     
     ## Write to disk
     write_countries = write_fst(g, here('data/countries.fst')),
@@ -160,7 +160,7 @@ plan =
           hourly = TRUE,
           location_add = 'Seattle, WA (LinkedIn)', # city = 'Seattle', state = 'WA',
           tz = 'America/Los_Angeles',
-          users_tab = 'mcd-lab.covgit.sea_users_linkedin', 
+          users_tab = 'mcd-lab.covgit.sea_users_linkedin' 
         )
       }
     )),
