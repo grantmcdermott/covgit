@@ -37,6 +37,9 @@ completeDT <- function(DT, cols, defs = NULL) {
 #'    the function will query data from the entire year.
 #' @param day An integer between corresponding to the day of month. Ignored if
 #'    the `month` argument is not provided.
+#' @param by_country Logical. Should the results be grouped by country? May
+#'    conflict with location-specific arguments below (e.g `city`), so caution
+#'    should be used when combining the two. Defaults to FALSE.
 #' @param city A character string, e.g. 'San Francisco' describing the 
 #'    particular geographic area of interest. Ignore this argument if you'd like
 #'    to query data from the entire globe.
@@ -136,6 +139,7 @@ get_gh_activity =
   function(
     billing = NULL,
     year = NULL, month = NULL, day = NULL,
+    by_country = NULL,
     city = NULL, city_alias=NULL, 
     state = NULL, state_alias=NULL,
     tz = NULL,
@@ -152,7 +156,7 @@ get_gh_activity =
     if (is.null(billing)) stop("Please provide a GCP project ID for billing.")
     
     if (is.null(tz)) {
-      tz='UTC'
+      tz = 'UTC'
       message('No timezone provided. All dates and times defaulting to UTC.')
     } else {
       ## Check that given tz at least matches one of R's built-in list pairs
@@ -190,13 +194,13 @@ get_gh_activity =
     ## Aggregate at daily or hourly level?
     tz_vars = paste0("DATE(created_at, '", tz, "') AS date")
     t_vars = "date"
-    t_vars_order = "date ASC"
+    # t_vars_order = "date ASC"
     events_max = 150
     if (hourly) {
       tz_vars = paste0(tz_vars, ", EXTRACT(HOUR from DATETIME(created_at, '", tz, "')) AS hr")
       t_vars = paste0(t_vars, ", hr")
       events_max = 30
-      t_vars_order = "date ASC, hr ASC"
+      # t_vars_order = "date ASC, hr ASC"
     }
     
     ## Are we including gender and age variables?
@@ -216,7 +220,15 @@ get_gh_activity =
       ga_vars = paste0(ga_vars, ", age")
       }
     
-    t_vars = paste0(t_vars, ga_vars)
+    grp_vars = paste0(t_vars, ga_vars)
+    
+    ## Are we aggregating by country?
+    if (is.null(by_country)) by_country = FALSE
+    if (by_country) {
+      grp_vars = paste0('country_code, ', grp_vars)
+      ga_range_vars = paste0(ga_range_vars, ', country_code')
+      # tz_vars = paste0('country_code, ', tz_vars)
+      }
     
     events_query =
       glue::glue_sql(
@@ -259,7 +271,7 @@ get_gh_activity =
     
     ## We'll run a special sub query for specific users that are defined by
     ## a predefined table and/or location.
-    if (!is.null(users_tab) | !location_null) {
+    if (!is.null(users_tab) | by_country | !location_null) {
       
       ## Use default GHTorrent June 2019 users table if none provided
       if (is.null(users_tab)) {users_tab = "ghtorrentmysql1906.MySQL1906.users"}
@@ -319,7 +331,7 @@ get_gh_activity =
         glue::glue_sql(
           "
           SELECT 
-          " , t_vars, ", 
+          " , grp_vars, ", 
             actor_login, 
             COUNT(*) AS events,
             SUM(commits) AS commits
@@ -328,7 +340,7 @@ get_gh_activity =
           INNER JOIN ({users_query}) AS b
           ON a.actor_login = b.login
           )
-          GROUP BY ", t_vars, ", actor_login
+          GROUP BY ", grp_vars, ", actor_login
           HAVING COUNT(*) < ", events_max,
           .con = gharchive_con
           )
@@ -339,13 +351,13 @@ get_gh_activity =
         glue::glue_sql(
           "
           SELECT 
-          " , t_vars, ", 
+          " , grp_vars, ", 
             actor_login, 
             COUNT(*) AS events,
             SUM(commits) AS commits
           FROM 
           ({events_query}) AS a
-          GROUP BY ", t_vars, ", actor_login
+          GROUP BY ", grp_vars, ", actor_login
           HAVING COUNT(*) < ", events_max,
           .con = gharchive_con
         )
@@ -356,12 +368,12 @@ get_gh_activity =
       glue::glue_sql(
         "
           SELECT 
-          ", t_vars, ",
+          ", grp_vars, ",
           ", e_vars, ",
           COUNT(actor_login) AS users
           FROM ({join_query})
-          GROUP BY ", t_vars, "
-          ORDER BY ", t_vars_order,
+          GROUP BY ", grp_vars, "
+          ORDER BY ", grp_vars,
         .con = gharchive_con
       )
     
@@ -410,7 +422,7 @@ get_gh_activity =
           activity_dt$age = factor(age_buckets_char[activity_dt$age + 1],
                                    levels = age_buckets_char)
         }
-      } else {
+      } else if (!by_country) {
         activity_dt$location = ifelse(location_null, 'Global', location)
       }
       
@@ -466,144 +478,13 @@ get_gh_activity_year =
       DT$location = ifelse(!is.null(location_add), location_add, "unknown")
     }
     
-    gcols = c('date', 'hr', 'location', 'users_tab', 'event_type')
+    gcols = c('date', 'hr', 'country_code', 'location', 'users_tab', 'event_type')
     gcols = intersect(gcols, names(DT))
     
     DT[, 
-       c(lapply(.SD, sum), list(users=max(users))),
+       c(lapply(.SD, sum), list(users = max(users))),
        .SDcols = scols,
        by = gcols]
-    
-  }
-
-
-
-
-# get_gh_activity_country -------------------------------------------------
-
-## Easier just to write a separate query function for this case. Here we want
-## to get the total number of events and users *by country*, potentially by date
-## (i.e. day) but otherwise over the entire period provided.
-
-get_gh_activity_country = 
-  function(
-    billing = NULL,
-    year = NULL,
-    month = NULL,
-    day = NULL,
-    tz = NULL,
-    by_date = FALSE,
-    excl_nulls = FALSE,
-    verbose = FALSE,
-    dryrun = FALSE
-    ) {
-    
-    if (is.null(billing)) stop("Please provide a GCP project ID for billing.")
-    
-    if (is.null(tz)) {
-      tz='UTC'
-      message('No timezone provided. All dates and times defaulting to UTC.')
-    } else {
-      ## Check that given tz at least matches one of R's built-in list pairs
-      if (tz %in% OlsonNames()) {
-        message('Dates and times will be converted to timezone: ', tz)
-      } else {
-        stop("Unexpected timezone: ", tz, 
-             "\nTry picking one from `OlsonNames()` (print it in your R console).")
-      }
-    }
-    
-    if (is.null(year)) {
-      year = 2020
-      if (is.null(month)) month = 1
-    }
-    if (!is.null(month)) {
-      month = sprintf("%02d", month)
-      if (!is.null(day)) day = sprintf("%02d", day)
-    }
-    
-    gharchive_dataset = ifelse(!is.null(day), 
-                               "day",
-                               ifelse(!is.null(month), "month", "year"))
-    
-    gharchive_con = 
-      DBI::dbConnect(
-        bigrquery::bigquery(),
-        project = "githubarchive",
-        dataset = gharchive_dataset,
-        billing = billing
-      )
-    
-    query_tbl = paste0(year, month, day)
-    
-    
-    users_query =
-      glue::glue_sql(
-        "SELECT login, country_code,
-        FROM `ghtorrentmysql1906.MySQL1906.users`",
-        .con = DBI::ANSI() ## https://github.com/tidyverse/glue/issues/120
-        )
-    if (excl_nulls) {
-      users_query =
-        glue::glue_sql(
-        users_query, "
-        WHERE country_code IS NOT NULL"
-        )
-    }
-    
-    grp_vars = if (by_date) c("date", "country_code") else "country_code"
-
-    full_query = 
-      glue::glue_sql(
-        "SELECT 
-        {`grp_vars`*},
-        COUNT (DISTINCT actor_login) AS users, 
-        COUNT(*) AS events
-        FROM (
-        (SELECT
-        DATE(created_at, {tz}) AS date,
-        actor.login as actor_login,
-        FROM {`query_tbl`}
-        WHERE EXTRACT(YEAR FROM DATE(created_at, {tz})) = {year}) AS a
-        INNER JOIN ({users_query}) AS b
-        ON a.actor_login = b.login
-        )
-        GROUP BY {`grp_vars`*}
-        ORDER BY {`grp_vars`*}",
-        .con = gharchive_con
-        )
-    
-    dry_q = gsub(paste0("`", query_tbl, "`"), 
-                 paste("githubarchive", gharchive_dataset, query_tbl, sep = "."),
-                 full_query)
-    
-    if (verbose) message(dry_q, "\n")
-    
-    if (dryrun) {
-      
-      qsize = suppressWarnings(bq_perform_query_dry_run(dry_q, billing = billing))
-      tbytes = grepl("TB", qsize)
-      qcost = sprintf("$%.2f", qsize * 5 / 1e12)  ## $5 per TB
-      message("Query will process: ", prettyunits::pretty_bytes(unclass(qsize)), 
-              "\nEstimated cost: ", qcost, "\n")
-      
-    } else {
-      
-      ## Below query will give annoying warning about SQL to S4 class conversion, 
-      ## we'd rather just suppress.
-      activity_country = suppressWarnings(DBI::dbGetQuery(gharchive_con, full_query))
-      setDT(activity_country)
-      
-      ## Complete implicit missing values
-      jnames = names(activity_country[, !c('users', 'events')])
-      activity_country = completeDT(activity_country, 
-                                    cols = jnames, 
-                                    defs = c(events = 0, users = 0))
-      
-      return(activity_country)
-    }
-    
-    DBI::dbDisconnect(gharchive_con)
     
   }
 

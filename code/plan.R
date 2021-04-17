@@ -1,23 +1,8 @@
 plan =
   drake_plan(
     
-    ## Countries (summarised by year)
-    c19_summ = rbind(
-      get_gh_activity_country(billing, year = 2019, month = 1),
-      get_gh_activity_country(billing, year = 2019)
-      )[, lapply(.SD, sum), by = .(country_code)][order(-users)] %>%
-      .[, year := 2019],
-    
-    c20_summ = rbind(
-      get_gh_activity_country(billing, year = 2020, month = 1),
-      get_gh_activity_country(billing, year = 2020)
-      )[, lapply(.SD, sum), by = .(country_code)][order(-users)] %>%
-      .[, year := 2020],
-    
-    c_all_summ = rbind(c19_summ, c20_summ),
-    
-    ## Country by date
-    c19 = rbind(
+    ## All countries by date
+    all = rbind(
       get_gh_activity_country(
         billing, 
         year = 2019, month = 1, 
@@ -49,7 +34,7 @@ plan =
 
 # Global ------------------------------------------------------------------
 
-    ## Get 2015--2020 global event data
+    ## Get 2015--2020 global activity data
     g = rbindlist(lapply(
       2015:2020, function(y) {
         get_gh_activity_year(billing = billing, year = y)
@@ -69,6 +54,18 @@ plan =
       g, y = 'users', start_date = '2020-02-15', end_date = '2020-05-31'
       ),
 
+
+# All countries separately ------------------------------------------------
+
+    ## Get 2015--2020 activity data for all countries
+    countries = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(billing = billing, year = y, by_country = TRUE)
+        }
+      ))[order(country_code, date)],
+    
+    ## Write to disk
+    write_countries = write_fst(g, here('data/countries.fst')),
 
 # New York ----------------------------------------------------------------
 
