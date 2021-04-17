@@ -224,6 +224,13 @@
       "Repository": "RSPM",
       "Hash": "44594a07a42e5f91fac9f93fda6d0109"
     },
+    "fst": {
+      "Package": "fst",
+      "Version": "0.9.4",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "66c2d5dffed8d181b9555617beb2d0f9"
+    },
     "gargle": {
       "Package": "gargle",
       "Version": "1.1.0",
@@ -237,6 +244,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "38f4026c0d09edb3a4474685cef68342"
+    },
+    "generics": {
+      "Package": "generics",
+      "Version": "0.1.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "4d243a9c10b00589889fe32314ffd902"
     },
     "ggplot2": {
       "Package": "ggplot2",
@@ -349,6 +363,13 @@
       "Source": "Repository",
       "Repository": "RSPM",
       "Hash": "3471fb65971f1a7b2d4ae7848cf2db8d"
+    },
+    "lubridate": {
+      "Package": "lubridate",
+      "Version": "1.7.10",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "1ebfdc8a3cfe8fe19184f5481972b092"
     },
     "magrittr": {
       "Package": "magrittr",
