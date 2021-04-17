@@ -34,7 +34,7 @@ plan =
       ))[!is.na(country_code), location := country_code][order(country_code, date)],
     
     ## Write to disk
-    write_countries = write_fst(g, here('data/countries.fst')),
+    write_countries = write_fst(countries, here('data/countries.fst')),
 
 # New York ----------------------------------------------------------------
 
