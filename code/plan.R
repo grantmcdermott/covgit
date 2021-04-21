@@ -36,6 +36,33 @@ plan =
     ## Write to disk
     write_countries = write_fst(countries, here('data/countries.fst')),
 
+# London ------------------------------------------------------------------
+
+    ## Get 2015--2020 (hourly) LON data
+    lon = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y, 
+          hourly = TRUE,
+          city = 'London', by_country = TRUE,
+          tz = 'Europe/London'
+        )
+        }
+      ))[country_code=='gb'],
+    
+    ## Write to disk
+    write_lon = write_fst(lon, here('data/lon.fst')),
+    
+    ## Plot the difference between the early 2019 and 2020 LON data
+    lon_diff_plot_events = daily_diff_plot(
+      lon[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
+      y = 'events', start_date = '2020-01-02', end_date = '2020-05-31'
+      ) + geom_vline(xintercept = as.IDate(c('2020-03-23')), lty = 2),
+    lon_diff_plot_users = daily_diff_plot(
+      lon[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
+      y = 'users', start_date = '2020-01-02', end_date = '2020-05-31'
+      ) + geom_vline(xintercept = as.IDate(c('2020-03-23')), lty = 2),
+
 # New York ----------------------------------------------------------------
 
     ## Get 2015--2020 (hourly) NYC data
