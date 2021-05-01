@@ -489,12 +489,107 @@ get_gh_activity_year =
   }
 
 
+# Proportion of weekend activity ------------------------------------------
+
+prop_wends = 
+  function(data, measure = c('events', 'users', 'both'),
+           highlight_year = NULL, highlight_col = NULL, ylim = NULL,
+           start_week = 2, end_week = 50, treat_line = 10) {
+    
+    mcols = match.arg(measure)
+    if (mcols=='both') mcols = c('events', 'users')
+    
+    if (is.null(highlight_year)) highlight_year = 2020
+    highlight_year = paste0(highlight_year)
+    if (is.null(highlight_col)) highlight_col = 'dodgerblue'
+    
+    col_vals = c('2015' = 'grey15', '2016' = 'grey30', '2017' = 'grey45', 
+                 '2018' = 'grey60', '2019' = 'grey75', '2020' = 'grey90')
+    
+    col_vals[highlight_year] = highlight_col
+    
+    if (is.null(data$location)) data$location = toupper(data$country_code)
+    
+    data = 
+      data %>%
+      .[, 
+        lapply(.SD, sum),
+        .SDcols = mcols,
+        by = .(location, year(date), isoweek(date), wend = wday(date) %in% c(1, 7))] %>%
+      .[, 
+        c(list(wend = wend), lapply(.SD, prop.table)),
+        .SDcols = mcols,
+        by = .(location, isoweek, year)] %>%
+      .[isoweek >= start_week & isoweek<=end_week] %>%
+      .[(wend)] %>%
+      melt(measure = mcols)
+    data %>% 
+      ggplot(aes(isoweek, value, col = as.factor(year))) + 
+      geom_line() + 
+      geom_line(data = data[year==highlight_year], col = highlight_col) +
+      geom_vline(xintercept = treat_line, lty = 2) + 
+      labs(title = 'Proportion of activity on weekends',
+           x = 'Week of year', y = 'Proportion') +
+      scale_y_percent(limits = ylim) +
+      scale_colour_manual(values = col_vals) +
+      theme(legend.position = 'bottom', legend.title = element_blank()) +
+      facet_wrap(~ location + stringr::str_to_title(variable))
+    
+  }
+
+
+# Proportion of activity outside normal office hours ----------------------
+
+prop_whours = 
+  function(data, measure = c('events', 'users', 'both'), 
+           highlight_year = NULL, highlight_col = NULL, ylim = NULL,
+           start_week = 2, end_week = 26, treat_line = 10) {
+    
+    mcols = match.arg(measure)
+    if (mcols=='both') mcols = c('events', 'users')
+    
+    if (is.null(highlight_year)) highlight_year = 2020
+    highlight_year = paste0(highlight_year)
+    if (is.null(highlight_col)) highlight_col = 'dodgerblue'
+    
+    col_vals = c('2015' = 'grey15', '2016' = 'grey30', '2017' = 'grey45', 
+                 '2018' = 'grey60', '2019' = 'grey75', '2020' = 'grey90')
+    
+    col_vals[highlight_year] = highlight_col
+    
+    if (is.null(data$location)) data$location = toupper(data$country_code)
+    
+    data %>%
+      .[, 
+        lapply(.SD, sum),
+        .SDcols = mcols,
+        by = .(location, year(date), isoweek(date), whours = hr %in% 9:18)] %>%
+      .[, 
+        c(list(whours = whours), lapply(.SD, prop.table)),
+        .SDcols = mcols,
+        by = .(location, isoweek, year)] %>%
+      .[isoweek >= start_week & isoweek<=end_week] %>%
+      .[!(whours)] %>% 
+      melt(measure = mcols) %>%
+      ggplot(aes(isoweek, value, col = as.factor(year))) + 
+      geom_line() + 
+      geom_vline(xintercept = treat_line, lty = 2) + 
+      labs(title = 'Proportion of activity outside normal office hours',
+           caption = 'Office hours defined as 9 am to 6 pm.',
+           x = 'Week of year', y = 'Proportion') +
+      scale_y_percent(limits = ylim) +
+      scale_colour_manual(values = col_vals) +
+      theme(legend.position = 'bottom', legend.title = element_blank()) +
+      facet_wrap(~ location + stringr::str_to_title(variable))
+    
+  }
+
 # Difference plot ---------------------------------------------------------
 
 daily_diff_plot = 
-  function(data, y = c('events', 'users'), 
+  function(data, measure = c('events', 'users'), 
            start_date = '2020-01-05', end_date = '2020-05-30') {
-    y = match.arg(y)
+    y = match.arg(measure)
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
     ## Get the date offset for comparing year on year (i.e. match weekends with 
