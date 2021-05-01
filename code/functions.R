@@ -492,7 +492,8 @@ get_gh_activity_year =
 # Difference plot ---------------------------------------------------------
 
 daily_diff_plot = 
-  function(data, y = c('events', 'users'), start_date, end_date) {
+  function(data, y = c('events', 'users'), 
+           start_date = '2020-01-05', end_date = '2020-05-30') {
     y = match.arg(y)
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
@@ -533,20 +534,27 @@ daily_diff_plot =
                                  paste(year(value)-1), 
                                  paste(variable)))] %>%
       .[, pnl := factor(fifelse(variable=='Difference', 'diff', 'main'), levels = c('main', 'diff'))]
+    
+    col_vals = c('2015' = 'grey15', '2016' = 'grey30', '2017' = 'grey45', 
+                 '2018' = 'grey60', '2019' = 'grey75', '2020' = 'grey90',
+                 'Difference' = 'black')
+    highlight_year = as.character(year(start_date))
+    col_vals[highlight_year] = 'dodgerblue'
+    
     p =
       ggplot(d, aes(value, y, col = grp, fill = grp, group = grp)) + 
       geom_line() +
       geom_area(data = d[pnl=='diff'], alpha = 0.3, show.legend = FALSE) +
       scale_x_date(date_breaks = '1 month', date_labels = '%b') +
       scale_y_continuous(labels = scales::comma) +
-      scale_colour_brewer(palette = 'Set2', aesthetics = c('colour', 'fill')) +
+      scale_colour_manual(values = col_vals, aesthetics = c('colour', 'fill')) +
       labs(y = paste('No. of', y)) +
       theme(
         axis.title.x = element_blank(),
         strip.text = element_blank(),
         legend.title = element_blank(),
         legend.position = 'bottom'
-        ) + 
+      ) + 
       labs(title = suff) +
       facet_wrap(~pnl, ncol = 1, scales = 'free_y')
     # p + ggsave(here('figs', paste0(suff, '-diff.png')), width = 8, height =5)
