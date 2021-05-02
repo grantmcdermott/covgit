@@ -602,6 +602,7 @@ daily_diff_plot =
     date_offset = 365 + median(wday(data$date) - wday(data$date+365)) 
 
     d = copy(data) %>%
+      .[, c('date', 'location', ..mcols)] %>%
       melt(measure = mcols, variable = 'type', value = 'y') %>%
       .[, date_offset := date + date_offset] %>%
       melt(id.vars = c('location', 'type', 'y')) %>%
