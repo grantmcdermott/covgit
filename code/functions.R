@@ -543,7 +543,7 @@ prop_wends =
 prop_whours = 
   function(data, measure = c('both', 'events', 'users'), 
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
-           start_week = 2, end_week = 26, treat_line = 10) {
+           start_week = 2, end_week = 50, treat_line = 10) {
     
     mcols = match.arg(measure)
     if (mcols=='both') mcols = c('events', 'users')

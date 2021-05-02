@@ -249,7 +249,6 @@ plan =
       treat_date = c('2020-03-04', '2020-03-12', '2020-03-23') ## MS + Amazon remote work, school closure, and mayoral stay at home order mandate
     ),
 
-
 # * Proportion of weekend activity ----------------------------------------
 
     ## ** Global ----
@@ -260,7 +259,7 @@ plan =
           lapply(.SD, sum), .SDcols = c('events', 'users'), 
           by = .(location, date)],
       ylim = c(0.10, 0.25), 
-      end_week = 26,
+      # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-23'))-1
       ),
     ## ** NYC ----
@@ -269,7 +268,7 @@ plan =
           lapply(.SD, sum), .SDcols = c('events', 'users'), 
           by = .(location, date)],
       ylim = c(0.10, 0.25), 
-      end_week = 26,
+      # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-16'))-1
     ),
     ## ** SFO ----
@@ -278,7 +277,7 @@ plan =
           lapply(.SD, sum), .SDcols = c('events', 'users'), 
           by = .(location, date)],
       ylim = c(0.10, 0.25), 
-      end_week = 26,
+      # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-16'))-1
     ),
     ## ** BEI ----
@@ -287,7 +286,7 @@ plan =
           lapply(.SD, sum), .SDcols = c('events', 'users'), 
           by = .(location, date)],
       ylim = c(0.10, 0.25), 
-      end_week = 26,
+      # end_week = 30,
       treat_line = isoweek(as.Date('2020-02-10'))-1
     ),
     ## ** BLR ----
@@ -295,8 +294,8 @@ plan =
       blr[year(date)>=2017, 
           lapply(.SD, sum), .SDcols = c('events', 'users'), 
           by = .(location, date)],
-      # ylim = c(0.10, 0.25), 
-      end_week = 26,
+      ylim = c(0.15, 0.30),
+      # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-24'))-1
     ),
     ## ** SEA ----
@@ -305,7 +304,52 @@ plan =
           lapply(.SD, sum), .SDcols = c('events', 'users'), 
           by = .(location, date)],
       ylim = c(0.10, 0.25), 
-      end_week = 26,
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-04'))-1
+    ),
+
+# Proportion of out of hours activity -------------------------------------
+
+    ## ** LON ----
+    lon_prop_whours = prop_whours(
+      lon[year(date)>=2017],
+      # ylim = c(0.25, 0.40),
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-23'))-1
+      ),
+    ## ** NYC ----
+    nyc_prop_whours = prop_whours(
+      nyc[year(date)>=2017],
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-16'))-1
+    ),
+    ## ** SFO ----
+    sfo_prop_whours = prop_whours(
+      sfo[year(date)>=2017],
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-16'))-1
+    ),
+    ## ** BEI ----
+    bei_prop_whours = prop_whours(
+      bei[year(date)>=2017],
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-02-10'))-1
+    ),
+    ## ** BLR ----
+    blr_prop_whours = prop_whours(
+      blr[year(date)>=2017],
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-24'))-1
+    ),
+    ## ** SEA ----
+    sea_prop_whours = prop_whours(
+      sea[year(date)>=2017],
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-04'))-1
     ),
 
