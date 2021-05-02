@@ -600,6 +600,9 @@ daily_diff_plot =
     ## discontinuities (i.e. start of new week in one year vs old week in 
     ## another).
     date_offset = 365 + median(wday(data$date) - wday(data$date+365)) 
+    
+    treat_grp = paste(unique(year(c(start_date, end_date))), collapse = '_')
+    comp_grp = paste(unique(year(c(start_date, end_date)-date_offset)), collapse = '_')
 
     d = copy(data) %>%
       .[, c('date', 'location', ..mcols)] %>%
@@ -613,18 +616,15 @@ daily_diff_plot =
     d = 
       melt(d, id.vars = c('location', 'type', 'value'), value.name = 'y') %>%
       .[, grp := fifelse(variable=='date', 
-                         paste(year(value)),  
+                         treat_grp,  
                          fifelse(variable=='date_offset', 
-                                 paste(year(value)-1), 
+                                 comp_grp, 
                                  paste(variable)))] %>%
       .[, pnl := factor(fifelse(variable=='Difference', 'diff', 'raw'), 
                         levels = c('raw', 'diff'))]
     
-    col_vals = c('2015' = 'grey10', '2016' = 'grey20', '2017' = 'grey30', 
-                 '2018' = 'grey40', '2019' = 'grey50', '2020' = 'grey60',
-                 'Difference' = 'black')
-    highlight_year = as.character(year(start_date))
-    col_vals[highlight_year] = 'dodgerblue'
+    col_vals = c('grey50', 'dodgerblue', 'black')
+    names(col_vals) = c(comp_grp, treat_grp, 'Difference')
     
     p =
       ggplot(d, aes(value, y, col = grp, fill = grp, group = grp)) + 
