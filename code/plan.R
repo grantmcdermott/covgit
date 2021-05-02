@@ -28,7 +28,8 @@ plan =
 
 # Cities ------------------------------------------------------------------
 
-## 10 largest by identified users in the GHTorrent data (`1906` table)
+## Top 10 largest by identified users in the GHTorrent data (`1906` table)
+## 
 # 1.  London, GB        (44,759)
 # 2.  New York, US      (44,413)
 # 3.  San Francisco, US (40,713)
@@ -90,6 +91,42 @@ plan =
     
     ## Write to disk
     write_sfo = write_fst(sfo, here('data/sfo.fst')),
+
+
+# * Beijing ---------------------------------------------------------------
+
+    ## Get 2015--2020 (hourly) BEI data
+    bei = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y, 
+          hourly = TRUE,
+          city = 'Beijing',
+          tz = 'Asia/Shanghai'
+        )
+      }
+    )),
+    
+    ## Write to disk
+    write_bei = write_fst(bei, here('data/bei.fst')),
+
+
+# * Bengaluru (Bangalore) -------------------------------------------------
+
+    ## Get 2015--2020 (hourly) BLR data
+    blr = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y, 
+          hourly = TRUE,
+          city = 'Bengaluru', city_alias = 'Bangalore',
+          tz = 'Asia/Kolkata'
+        )
+      }
+    )),
+    
+    ## Write to disk
+    write_blr = write_fst(blr, here('data/blr.fst')),
 
 # * Seattle ---------------------------------------------------------------
     
@@ -179,6 +216,19 @@ plan =
       sfo[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
       measure = 'both', start_date = '2020-02-01', end_date = '2020-05-31',
       treat_date = '2020-03-16' ## Shelter-in-place order
+    ),
+    ## BEI
+    ## Going back a full year to demonstrate the large effect after Chinese New Year
+    bei_diff_plot = daily_diff_plot(
+      bei[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
+      measure = 'both', start_date = '2019-07-01', end_date = '2020-06-30',
+      treat_date = '2020-02-10' ## Shelter-in-place order
+    ),
+    ## Bengaluru
+    blr_diff_plot = daily_diff_plot(
+      blr[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
+      measure = 'both', start_date = '2019-08-01', end_date = '2020-07-31',
+      treat_date = '2020-03-24' ## Nationwide lockdown (slowly phased out from May 30)
     ),
     ## Seattle 
     sea_diff_plot = daily_diff_plot(
