@@ -587,51 +587,40 @@ prop_whours =
 # Difference plot ---------------------------------------------------------
 
 daily_diff_plot = 
-  function(data, measure = c('events', 'users'), 
-           start_date = '2020-01-05', end_date = '2020-05-30') {
-    y = match.arg(measure)
+  function(data, measure = c('events', 'users', 'both'), 
+           start_date = '2020-01-05', end_date = '2020-05-30',
+           treat_date = NULL) {
+    mcols = match.arg(measure)
+    if (mcols=='both') mcols = c('events', 'users')
     start_date = as.Date(start_date)
     end_date = as.Date(end_date)
+    if(!is.null(treat_date)) treat_date = as.IDate(treat_date)
     ## Get the date offset for comparing year on year (i.e. match weekends with 
     ## weekends, etc.). Note that we take the median value to avoid weekday 
     ## discontinuities (i.e. start of new week in one year vs old week in 
     ## another).
     date_offset = 365 + median(wday(data$date) - wday(data$date+365)) 
-    suff = paste0('_', y)
-    if (!is.null(first(data$location))) {
-      suff = paste0(
-        suff, 
-        '_', 
-        gsub("[[:punct:]][[:space:]]", "", tolower(first(data$location)))
-        )
-    }
-    if (!is.null(first(data$users_tab))) {
-      suff = paste0(
-        suff, 
-        '_', 
-        sub('.*\\.', '', first(data$users_tab))
-      )
-    }
+
     d = copy(data) %>%
-      setnames(y, 'y') %>%
-      .[, c('date', 'y')] %>%
+      melt(measure = mcols, variable = 'type', value = 'y') %>%
       .[, date_offset := date + date_offset] %>%
-      melt(id.vars = 'y') %>%
+      melt(id.vars = c('location', 'type', 'y')) %>%
       .[value >= start_date & value <= end_date] %>%
-      .[, .(y = sum(y)), by = .(variable, value)] %>% ## ICO any remaining duplicates
-      dcast(value ~ variable, value.var = 'y') %>%
+      .[, .(y = sum(y)), by = .(location, type, variable, value)] %>% ## ICO any remaining duplicates
+      dcast(location + type + value ~ variable, value.var = 'y') %>%
       .[, Difference := date - date_offset]
     d = 
-      melt(d, id.vars = 'value', value.name = 'y') %>%
+      melt(d, id.vars = c('location', 'type', 'value'), value.name = 'y') %>%
       .[, grp := fifelse(variable=='date', 
                          paste(year(value)),  
                          fifelse(variable=='date_offset', 
                                  paste(year(value)-1), 
                                  paste(variable)))] %>%
-      .[, pnl := factor(fifelse(variable=='Difference', 'diff', 'main'), levels = c('main', 'diff'))]
+      .[, pnl := factor(fifelse(variable=='Difference', 'diff', 'raw'), 
+                        levels = c('raw', 'diff'))]
     
-    col_vals = c('2015' = 'grey15', '2016' = 'grey30', '2017' = 'grey45', 
-                 '2018' = 'grey60', '2019' = 'grey75', '2020' = 'grey90',
+    col_vals = c('2015' = 'grey10', '2016' = 'grey20', '2017' = 'grey30', 
+                 '2018' = 'grey40', '2019' = 'grey50', '2020' = 'grey60',
                  'Difference' = 'black')
     highlight_year = as.character(year(start_date))
     col_vals[highlight_year] = 'dodgerblue'
@@ -643,16 +632,19 @@ daily_diff_plot =
       scale_x_date(date_breaks = '1 month', date_labels = '%b') +
       scale_y_continuous(labels = scales::comma) +
       scale_colour_manual(values = col_vals, aesthetics = c('colour', 'fill')) +
-      labs(y = paste('No. of', y)) +
+      labs(y = 'Daily value') +
       theme(
         axis.title.x = element_blank(),
-        strip.text = element_blank(),
         legend.title = element_blank(),
         legend.position = 'bottom'
       ) + 
-      labs(title = suff) +
-      facet_wrap(~pnl, ncol = 1, scales = 'free_y')
+      geom_vline(xintercept = treat_date, lty = 2) +
+      facet_wrap(
+        pnl ~ location + stringr::str_to_title(type), 
+        scales = 'free_y', nrow = 2,
+        labeller = labeller(pnl = function(x) gsub("diff|raw", "", x))
+        )
     # p + ggsave(here('figs', paste0(suff, '-diff.png')), width = 8, height =5)
     # p + ggsave(here('figs/PDF', paste0(suff, '-diff.pdf')), width = 8, height =5, device = cairo_pdf)
-    print(p)
+    return(p)
   }
