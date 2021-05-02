@@ -492,7 +492,7 @@ get_gh_activity_year =
 # Proportion of weekend activity ------------------------------------------
 
 prop_wends = 
-  function(data, measure = c('events', 'users', 'both'),
+  function(data, measure = c('both', 'events', 'users'),
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
            start_week = 2, end_week = 50, treat_line = 10) {
     
@@ -541,7 +541,7 @@ prop_wends =
 # Proportion of activity outside normal office hours ----------------------
 
 prop_whours = 
-  function(data, measure = c('events', 'users', 'both'), 
+  function(data, measure = c('both', 'events', 'users'), 
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
            start_week = 2, end_week = 26, treat_line = 10) {
     
@@ -587,7 +587,7 @@ prop_whours =
 # Difference plot ---------------------------------------------------------
 
 daily_diff_plot = 
-  function(data, measure = c('events', 'users', 'both'), 
+  function(data, measure = c('both', 'events', 'users'), 
            start_date = '2020-01-05', end_date = '2020-05-30',
            treat_date = NULL) {
     mcols = match.arg(measure)
