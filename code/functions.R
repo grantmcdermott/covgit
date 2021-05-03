@@ -37,6 +37,13 @@ completeDT <- function(DT, cols, defs = NULL) {
 #'    the function will query data from the entire year.
 #' @param day An integer between corresponding to the day of month. Ignored if
 #'    the `month` argument is not provided.
+#' @param by_login Logical. Should we aggregate the results at the level of 
+#'    individual actors (i.e. login IDs)? Defaults to FALSE, which means that
+#'    the results will be aggregated at the location or table level (e.g. daily
+#'    or hourly use by city). If this argument is changed to TRUE, it will 
+#'    potentially lead to a *much*, *much* larger dataset that have to be 
+#'    downloaded. (Prohibitively large in some cases.) Caution should hence be 
+#'    used before applying it.
 #' @param by_country Logical. Should the results be grouped by country? May
 #'    conflict with location-specific arguments below (e.g `city`), so caution
 #'    should be used when combining the two. Defaults to FALSE.
@@ -74,9 +81,9 @@ completeDT <- function(DT, cols, defs = NULL) {
 #' @param age Logical. Should the results be disaggregated by age? 
 #'    Alternatively, users may provide the `age_buckets` argument instead (this is
 #'    recommended). Only used if the `users_tab` argument is not NULL.
-#' @param age_buckets Integer vector, e.g. `c(20, 30, 40)` denoting the age
+#' @param age_buckets Integer vector, e.g. `c(30, 40, 50)` denoting the age
 #'    "buckets" that the results will be classified according to. E.g. The 
-#'    previous vector will generate four age groups: <20, 21-29, 30-39, >=40.
+#'    previous vector will generate four age groups: <30, 31-39, 40-49, >=50.
 #'    Supersedes `age` if both arguments provided, although similarly only used 
 #'    if the `users_tab` argument is not NULL.
 #' @param verbose Logical. If TRUE, then the full SQL query string will be 
@@ -139,6 +146,7 @@ get_gh_activity =
   function(
     billing = NULL,
     year = NULL, month = NULL, day = NULL,
+    by_login = FALSE,
     by_country = NULL,
     city = NULL, city_alias=NULL, 
     state = NULL, state_alias=NULL,
@@ -228,7 +236,13 @@ get_gh_activity =
       grp_vars = paste0('country_code, ', grp_vars)
       ga_range_vars = paste0(ga_range_vars, ', country_code')
       # tz_vars = paste0('country_code, ', tz_vars)
-      }
+    }
+    
+    grp_vars_final = grp_vars
+    ## Are we aggregating at the level of individual actors?
+    if (by_login) {
+      grp_vars_final = paste0('actor_login, ', grp_vars)
+    }
     
     events_query =
       glue::glue_sql(
@@ -368,12 +382,12 @@ get_gh_activity =
       glue::glue_sql(
         "
           SELECT 
-          ", grp_vars, ",
+          ", grp_vars_final, ",
           ", e_vars, ",
           COUNT(actor_login) AS users
           FROM ({join_query})
-          GROUP BY ", grp_vars, "
-          ORDER BY ", grp_vars,
+          GROUP BY ", grp_vars_final, "
+          ORDER BY ", grp_vars_final,
         .con = gharchive_con
       )
     
@@ -426,11 +440,14 @@ get_gh_activity =
         activity_dt$location = ifelse(location_null, 'Global', location)
       }
       
-      ## Complete implicit missing values
-      jnames = names(activity_dt[, !c('users', 'events')])
-      activity_dt = completeDT(activity_dt, 
-                               cols = jnames, 
-                               defs = c(events = 0, users = 0))
+      ## Complete implicit missing values (only if not aggregating at individual
+      ## level)
+      if (!by_login) {
+        jnames = names(activity_dt[, !c('users', 'events')])
+        activity_dt = completeDT(activity_dt, 
+                                 cols = jnames, 
+                                 defs = c(events = 0, users = 0))
+      }
       
       return(activity_dt)
     }
@@ -478,7 +495,10 @@ get_gh_activity_year =
       DT$location = ifelse(!is.null(location_add), location_add, "unknown")
     }
     
-    gcols = c('date', 'hr', 'country_code', 'location', 'users_tab', 'event_type')
+    gcols = c('date', 'hr', 
+              'actor_login', 'country_code', 
+              'location', 'users_tab', 
+              'event_type', 'gender', 'age')
     gcols = intersect(gcols, names(DT))
     
     DT[, 
