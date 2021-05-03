@@ -176,7 +176,8 @@ plan =
           hourly = TRUE,
           location_add = 'Seattle, WA (LinkedIn)', # city = 'Seattle', state = 'WA',
           tz = 'America/Los_Angeles',
-          users_tab = 'mcd-lab.covgit.sea_users_linkedin' 
+          users_tab = 'mcd-lab.covgit.sea_users_linkedin',
+          gender = TRUE, age_buckets = c(30, 40, 50)
         )
       }
     )),
