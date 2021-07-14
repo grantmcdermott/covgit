@@ -213,17 +213,17 @@ get_gh_activity =
     
     ## Are we including gender and age variables?
     ga_vars = ''
-    ga_range_vars = ''
     if (gender) ga_vars = paste0(ga_vars, ", gender")
+    ga_range_vars = ga_vars
     if (age | !is.null(age_buckets)) {
       if (!is.null(age_buckets)) {
         age_buckets = sort(age_buckets) 
         age_range_buckets = paste0("RANGE_BUCKET(age, [", 
                              paste(age_buckets, collapse = ", "), 
                              "])")
-        ga_range_vars = paste0(ga_vars, ", ", age_range_buckets," AS age")
+        ga_range_vars = paste0(ga_range_vars, ", ", age_range_buckets," AS age")
       } else {
-        ga_range_vars = paste0(ga_vars, ", age")
+        ga_range_vars = paste0(ga_range_vars, ", age")
       }
       ga_vars = paste0(ga_vars, ", age")
       }

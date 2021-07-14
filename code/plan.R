@@ -165,7 +165,7 @@ plan =
     ## Write to disk
     write_sea_cohort = write_fst(sea_cohort, here('data/sea-cohort.fst')),
 
-# ** Seattle (matched linkedin) -------------------------------------------
+# ** Seattle (linkedin matched) -------------------------------------------
 
     ## As above, but this time on a subset of users matched to a LinkedIn profile.
     ## Allows us to categorise by age and gender.
@@ -184,6 +184,27 @@ plan =
     
     ## Write to disk
     write_sea_linkedin = write_fst(sea_linkedin, here('data/sea-linkedin.fst')),
+
+
+# ** Seattle (gender matched) ---------------------------------------------
+
+    ## Similar to the above, except this time matched to gender for all Seattle
+    ## users (not just those with an identifiable LinkedIn profile)
+    sea_gender = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y,
+          hourly = TRUE,
+          location_add = 'Seattle, WA (gender)', # city = 'Seattle', state = 'WA',
+                tz = 'America/Los_Angeles',
+          users_tab = 'mcd-lab.covgit.sea_users_gender_matched', 
+          gender = TRUE
+          )
+        }
+      )),
+
+    ## Write to disk
+    write_sea_gender = write_fst(sea_gender, here('data/sea-gender.fst')),
 
 
 # Plots -------------------------------------------------------------------  
@@ -209,14 +230,15 @@ plan =
     nyc_diff_plot = daily_diff_plot(
       nyc[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
       start_date = '2020-02-01', end_date = '2020-05-31',
-      treat_date = '2020-03-16' ## New York State on PAUSE
+      treat_date = '2020-03-22' ## New York State on PAUSE
     ),
     ## ** SFO ----
     ## Starting in Feb to avoid weird bump that occurs around that time in 2019
     sfo_diff_plot = daily_diff_plot(
       sfo[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
       start_date = '2020-02-01', end_date = '2020-05-31',
-      treat_date = '2020-03-16' ## Shelter-in-place order
+      # treat_date = '2020-03-16' ## Shelter-in-place order
+      treat_date = '2020-03-19' ## State-wide shelter-in-place order
     ),
     ## ** BEI ----
     ## Going back a full year to demonstrate the large effect after Chinese New Year
@@ -243,9 +265,15 @@ plan =
       start_date = '2020-01-02', end_date = '2020-05-31',
       treat_date = c('2020-03-04', '2020-03-12', '2020-03-23') ## MS + Amazon remote work, school closure, and mayoral stay at home order mandate
     ),
-    ## *** SEA (matched linkedin) ----
+    ## *** SEA (linkedin matched) ----
     sea_linkedin_diff_plot = daily_diff_plot(
       sea_linkedin[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
+      start_date = '2020-01-02', end_date = '2020-05-31',
+      treat_date = c('2020-03-04', '2020-03-12', '2020-03-23') ## MS + Amazon remote work, school closure, and mayoral stay at home order mandate
+    ),
+    ## *** SEA (gender matched) ----
+    sea_gender_diff_plot = daily_diff_plot(
+      sea_gender[, lapply(.SD, sum), .SDcols = c('events', 'users'), by = .(date, location)], 
       start_date = '2020-01-02', end_date = '2020-05-31',
       treat_date = c('2020-03-04', '2020-03-12', '2020-03-23') ## MS + Amazon remote work, school closure, and mayoral stay at home order mandate
     ),
@@ -270,7 +298,7 @@ plan =
           by = .(location, date)],
       ylim = c(0.10, 0.25), 
       # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-16'))-1
+      treat_line = isoweek(as.Date('2020-03-22'))-1
     ),
     ## ** SFO ----
     sfo_prop_wends = prop_wends(
@@ -279,7 +307,7 @@ plan =
           by = .(location, date)],
       ylim = c(0.10, 0.25), 
       # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-16'))-1
+      treat_line = isoweek(as.Date('2020-03-19'))-1
     ),
     ## ** BEI ----
     bei_prop_wends = prop_wends(
