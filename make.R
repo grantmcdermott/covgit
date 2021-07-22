@@ -1,6 +1,7 @@
 # Libraries ---------------------------------------------------------------
 
 library(drake)
+library(visNetwork)
 library(bigrquery)
 library(stringr)
 library(glue)
