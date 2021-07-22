@@ -75,6 +75,26 @@ plan =
     ## Write to disk
     write_nyc = write_fst(nyc, here('data/nyc.fst')),
 
+# ** NYC (gender matched) -------------------------------------------------
+
+## Same as per the above, except this time matched to gender for as many users
+## as possible
+nyc_gender = rbindlist(lapply(
+  2015:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, year = y,
+      hourly = TRUE,
+      location_add = 'New York, NY (gender)',
+      tz = 'America/New_York',
+      users_tab = 'mcd-lab.covgit.nyc_users_gender_matched', 
+      gender = TRUE
+    )
+  }
+)),
+
+## Write to disk
+write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
+
 # * San Francisco ----------------------------------------------------------
 
     ## Get 2015--2020 (hourly) San Francisco data
@@ -92,6 +112,25 @@ plan =
     ## Write to disk
     write_sfo = write_fst(sfo, here('data/sfo.fst')),
 
+# ** San Francisco (gender matched) ---------------------------------------
+
+## Same as per the above, except this time matched to gender for as many users
+## as possible
+sfo_gender = rbindlist(lapply(
+  2015:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, year = y,
+      hourly = TRUE,
+      location_add = 'San Francisco, CA (gender)',
+      tz = 'America/Los_Angeles',
+      users_tab = 'mcd-lab.covgit.sfo_users_gender_matched', 
+      gender = TRUE
+    )
+  }
+)),
+
+## Write to disk
+write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
 
 # * Beijing ---------------------------------------------------------------
 
