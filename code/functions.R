@@ -512,7 +512,7 @@ get_gh_activity_year =
 # Proportion of weekend activity ------------------------------------------
 
 prop_wends = 
-  function(data, measure = c('both', 'events', 'users'),
+  function(data, measure = c('both', 'events', 'users'), by_gender = FALSE,
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
            start_week = 2, end_week = 50, treat_line = 10) {
     
@@ -530,19 +530,28 @@ prop_wends =
     
     if (is.null(data$location)) data$location = toupper(data$country_code)
     
+    data[,
+         ':=' (year = year(date), 
+               isoweek = isoweek(date), 
+               wend = wday(date) %in% c(1, 7))]
+    
+    gvars = c('location', 'year', 'isoweek')
+    if (by_gender) gvars = c(gvars, 'gender')
+    
     data = 
       data %>%
       .[, 
         lapply(.SD, sum),
         .SDcols = mcols,
-        by = .(location, year(date), isoweek(date), wend = wday(date) %in% c(1, 7))] %>%
+        by = c(gvars, 'wend')] %>%
       .[, 
         c(list(wend = wend), lapply(.SD, prop.table)),
         .SDcols = mcols,
-        by = .(location, isoweek, year)] %>%
+        by = gvars] %>%
       .[isoweek >= start_week & isoweek<=end_week] %>%
       .[(wend)] %>%
       melt(measure = mcols)
+    
     data %>% 
       ggplot(aes(isoweek, value, col = as.factor(year))) + 
       geom_line() + 
@@ -553,7 +562,11 @@ prop_wends =
       scale_y_percent(limits = ylim) +
       scale_colour_manual(values = col_vals) +
       theme(legend.position = 'bottom', legend.title = element_blank()) +
-      facet_wrap(~ location + stringr::str_to_title(variable))
+      {if(by_gender) {
+        facet_wrap(~ location + stringr::str_to_title(variable) + gender)
+      } else {
+        facet_wrap(~ location + stringr::str_to_title(variable))
+      }}
     
   }
 
@@ -561,7 +574,7 @@ prop_wends =
 # Proportion of activity outside normal office hours ----------------------
 
 prop_whours = 
-  function(data, measure = c('both', 'events', 'users'), 
+  function(data, measure = c('both', 'events', 'users'), by_gender = FALSE,
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
            start_week = 2, end_week = 50, treat_line = 10) {
     
@@ -579,15 +592,23 @@ prop_whours =
     
     if (is.null(data$location)) data$location = toupper(data$country_code)
     
+    data[,
+         ':=' (year = year(date), 
+               isoweek = isoweek(date), 
+               whours = hr %in% 9:18)]
+    
+    gvars = c('location', 'year', 'isoweek')
+    if (by_gender) gvars = c(gvars, 'gender')
+    
     data %>%
       .[, 
         lapply(.SD, sum),
         .SDcols = mcols,
-        by = .(location, year(date), isoweek(date), whours = hr %in% 9:18)] %>%
+        by = c(gvars, 'whours')] %>%
       .[, 
         c(list(whours = whours), lapply(.SD, prop.table)),
         .SDcols = mcols,
-        by = .(location, isoweek, year)] %>%
+        by = gvars] %>%
       .[isoweek >= start_week & isoweek<=end_week] %>%
       .[!(whours)] %>% 
       melt(measure = mcols) %>%
@@ -600,7 +621,11 @@ prop_whours =
       scale_y_percent(limits = ylim) +
       scale_colour_manual(values = col_vals) +
       theme(legend.position = 'bottom', legend.title = element_blank()) +
-      facet_wrap(~ location + stringr::str_to_title(variable))
+      {if(by_gender) {
+        facet_wrap(~ location + stringr::str_to_title(variable) + gender)
+      } else {
+        facet_wrap(~ location + stringr::str_to_title(variable))
+      }}
     
   }
 

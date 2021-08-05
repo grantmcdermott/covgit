@@ -58,6 +58,25 @@ plan =
     ## Write to disk
     write_lon = write_fst(lon, here('data/lon.fst')),
 
+
+# ** London (gender matched) ----------------------------------------------
+
+    lon_gender = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y,
+          hourly = TRUE,
+          location_add = 'London (gender)',
+          tz = 'Europe/London',
+          users_tab = 'mcd-lab.covgit.lon_users_gender_matched', 
+          gender = TRUE
+        )
+      }
+    )),
+
+    ## Write to disk
+    write_lon_gender = write_fst(lon_gender, here('data/lon-gender.fst')),
+
 # * New York --------------------------------------------------------------
 
     ## Get 2015--2020 (hourly) NYC data
@@ -114,23 +133,23 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
 
 # ** San Francisco (gender matched) ---------------------------------------
 
-## Same as per the above, except this time matched to gender for as many users
-## as possible
-sfo_gender = rbindlist(lapply(
-  2015:2020, function(y) {
-    get_gh_activity_year(
-      billing = billing, year = y,
-      hourly = TRUE,
-      location_add = 'San Francisco, CA (gender)',
-      tz = 'America/Los_Angeles',
-      users_tab = 'mcd-lab.covgit.sfo_users_gender_matched', 
-      gender = TRUE
-    )
-  }
-)),
-
-## Write to disk
-write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
+    ## Same as per the above, except this time matched to gender for as many users
+    ## as possible
+    sfo_gender = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y,
+          hourly = TRUE,
+          location_add = 'San Francisco, CA (gender)',
+          tz = 'America/Los_Angeles',
+          users_tab = 'mcd-lab.covgit.sfo_users_gender_matched', 
+          gender = TRUE
+        )
+      }
+    )),
+    
+    ## Write to disk
+    write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
 
 # * Beijing ---------------------------------------------------------------
 
@@ -166,6 +185,26 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
     
     ## Write to disk
     write_blr = write_fst(blr, here('data/blr.fst')),
+
+
+# ** Bengalru (gender matched) --------------------------------------------
+
+    blr_gender = rbindlist(lapply(
+      2015:2020, function(y) {
+        get_gh_activity_year(
+          billing = billing, year = y,
+          hourly = TRUE,
+          location_add = 'Bengaluru (gender)',
+          tz = 'Asia/Kolkata',
+          users_tab = 'mcd-lab.covgit.blr_users_gender_matched', 
+          gender = TRUE
+        )
+      }
+    )),
+    
+    ## Write to disk
+    write_blr_gender = write_fst(blr_gender, here('data/blr-gender.fst')),
+
 
 # * Seattle ---------------------------------------------------------------
     
@@ -330,6 +369,17 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-23'))-1
       ),
+    ## ** LON (gender) ----
+    lon_gender_prop_wends = prop_wends(
+      lon_gender[year(date)>=2017 & gender!=3, 
+                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
+                        location, date)],
+      by_gender = TRUE,
+      ylim = c(0.10, 0.25), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-23'))-1
+      ),
     ## ** NYC ----
     nyc_prop_wends = prop_wends(
       nyc[year(date)>=2017, 
@@ -339,6 +389,17 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-22'))-1
     ),
+    ## ** NYC (gender) ----
+    nyc_gender_prop_wends = prop_wends(
+      nyc_gender[year(date)>=2017 & gender!=3, 
+                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
+                        location, date)],
+      by_gender = TRUE,
+      ylim = c(0.10, 0.25), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-22'))-1
+      ),
     ## ** SFO ----
     sfo_prop_wends = prop_wends(
       sfo[year(date)>=2017, 
@@ -348,6 +409,17 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-19'))-1
     ),
+    ## ** SFO (gender) ----
+    sfo_gender_prop_wends = prop_wends(
+      sfo_gender[year(date)>=2017 & gender!=3, 
+                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
+                        location, date)],
+      by_gender = TRUE,
+      ylim = c(0.05, 0.25), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-19'))-1
+      ),
     ## ** BEI ----
     bei_prop_wends = prop_wends(
       bei[year(date)>=2017, 
@@ -366,6 +438,17 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-24'))-1
     ),
+    ## ** BLR (gender) ----
+    blr_gender_prop_wends = prop_wends(
+      blr_gender[year(date)>=2017 & gender!=3, 
+                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
+                        location, date)],
+      by_gender = TRUE,
+      ylim = c(0.10, 0.30), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-24'))-1
+      ),
     ## ** SEA ----
     sea_prop_wends = prop_wends(
       sea[year(date)>=2017, 
@@ -375,6 +458,17 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-04'))-1
     ),
+    ## ** SEA (gender) ----
+    sea_gender_prop_wends = prop_wends(
+      sea_gender[year(date)>=2017 & gender!=3, 
+                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
+                        location, date)],
+      by_gender = TRUE,
+      ylim = c(0.05, 0.25), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-04'))-1
+      ),
 
 # Proportion of out of hours activity -------------------------------------
 
@@ -385,9 +479,29 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-23'))-1
       ),
+    ## ** LON (gender) ----
+    lon_gender_prop_whours = prop_whours(
+      lon_gender[year(date)>=2017 & gender!=3, 
+                 .SD, 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
+      by_gender = TRUE,
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-23'))-1
+      ),
     ## ** NYC ----
     nyc_prop_whours = prop_whours(
       nyc[year(date)>=2017],
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-16'))-1
+    ),
+    ## ** NYC (gender) ----
+    nyc_gender_prop_whours = prop_whours(
+      nyc_gender[year(date)>=2017 & gender!=3, 
+                 .SD, 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
+      by_gender = TRUE,
       # ylim = c(0.25, 0.40), 
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-16'))-1
@@ -398,7 +512,17 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # ylim = c(0.25, 0.40), 
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-16'))-1
-    ),
+      ),
+    ## ** SFO (gender) ----
+    sfo_gender_prop_whours = prop_whours(
+      sfo_gender[year(date)>=2017 & gender!=3, 
+                 .SD, 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
+      by_gender = TRUE,
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-16'))-1
+      ),
     ## ** BEI ----
     bei_prop_whours = prop_whours(
       bei[year(date)>=2017],
@@ -413,6 +537,16 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-24'))-1
     ),
+    ## ** BLR (gender) ----
+    blr_gender_prop_whours = prop_whours(
+      blr_gender[year(date)>=2017 & gender!=3, 
+                 .SD, 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
+      by_gender = TRUE,
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-24'))-1
+      ),
     ## ** SEA ----
     sea_prop_whours = prop_whours(
       sea[year(date)>=2017],
@@ -420,11 +554,16 @@ write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
       # end_week = 30,
       treat_line = isoweek(as.Date('2020-03-04'))-1
     ),
+    ## ** SEA (gender) ----
+    sea_gender_prop_whours = prop_whours(
+      sea_gender[year(date)>=2017 & gender!=3, 
+                 .SD, 
+                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
+      by_gender = TRUE,
+      # ylim = c(0.25, 0.40), 
+      # end_week = 30,
+      treat_line = isoweek(as.Date('2020-03-04'))-1
+    )
 
   )
-
-
-
-
-
 
