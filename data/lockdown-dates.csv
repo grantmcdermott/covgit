@@ -1,0 +1,10 @@
+location,country_code,lockdown,comment
+London,gb,2020-03-23,National stay at home order
+"New York, NY",us,2020-03-22,New York State on PAUSE
+"San Francisco, CA",us,2020-03-16,County shelter-in-place order
+"San Francisco, CA",us,2020-03-19,State-wide shelter-in-place order
+Beijing,cn,2020-02-10,National shelter-in-place order
+Bengaluru,in,2020-03-24,Nationwide lockdown (slowly phased out from May 30)
+"Seattle, WA",us,2020-03-04,Microsoft + Amazon mandate remote work for SEA employees
+"Seattle, WA",us,2020-03-12,School closures
+"Seattle, WA",us,2020-03-23,SEA mayoral stay at home order
