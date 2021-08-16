@@ -509,6 +509,107 @@ get_gh_activity_year =
   }
 
 
+# Collapse by wend or whours proportions ----------------------------------
+
+collapse_prop =
+  function(data, 
+           type = c('wend', 'whours'), 
+           work_hours = 9:18, excl_wends = FALSE, ## whours-specific args
+           measure = c('both', 'events', 'users'), 
+           groups = NULL, 
+           treatment_window = NULL,
+           min_year = NULL,
+           bad_weeks=NULL, drop_wk1 = TRUE) {
+    
+    d = copy(data)
+    
+    type = match.arg(type)
+    
+    mcols = match.arg(measure)
+    if (mcols=='both') mcols = c('events', 'users')
+    
+    req_cols = c('date', 'lockdown', mcols, groups)
+    miss_cols = !(req_cols %in% names(d))
+    if (TRUE %in% miss_cols) {
+      stop(paste('Expected columns: ', 
+                 paste(req_cols, collapse = ', '), 
+                 '\nBut the following are missing:', 
+                 paste(req_cols[miss_cols], collapse = ', ')))
+    }
+    
+    ## Extra date and calendar vars (only create if missing)
+    if ('yr' %ni% names(d)) d[, yr := year(date)]
+    if ('wk' %ni% names(d)) d[, wk := isoweek(date)]
+    if (type %ni% names(d))  {
+      if (type=='wend') d[, type_col := wday(date) %in% c(1, 7)]
+      if (type=='whours') d[, type_col := hr %in% work_hours]
+    }
+    
+    if (type=='whours' & excl_wends) {
+      d = d[wday(date) %in% 2:6]
+    }
+    
+    ## Min year for comparison group?
+    if (!is.null(min_year)) {
+      if (is.numeric(min_year)) {
+        d = d[yr>=min_year] 
+      } else {
+        message('Minimum year is not numeric. Ignoring.\n')
+      }
+    } 
+    
+    ## Drop the first week of the year? Especially sensitive to idiosyncratic
+    ## timing and holidays.
+    if (drop_wk1) d = d[wk!= 1]
+    
+    d[, ':=' (lockdown = isoweek(lockdown), lockdown_yr = year(lockdown))]
+    
+    gvars = c('location', 'yr', 'wk', 'type_col', 'lockdown', 'lockdown_yr')
+    if (!is.null(groups)) gvars = c(gvars, groups)
+    gvars2 = setdiff(gvars, 'type_col')
+    
+    setkeyv(d, gvars)
+    
+    d =
+      d[, 
+        lapply(.SD, sum, na.rm = TRUE),
+        .SDcols = mcols,
+        by = gvars
+      ][,
+        c(list(type_col = type_col), 
+          lapply(.SD, prop.table)),
+        .SDcols = mcols,
+        by = gvars2]
+    
+    if (type=='wend') d = d[(type_col)]
+    if (type=='whours') d = d[!(type_col)]
+    
+    setnames(d, old = 'type_col', new = type)
+    
+    ## We also need to filter our bad dates (now weeks), since they will distort
+    ## things at the week level too. Each "set" falls in the same week.
+    if (!is.null(bad_weeks)) {
+      d = merge(d, bad_weeks, all.x = TRUE)[is.na(bweek)][, bweek := NULL]
+    }
+    
+    ## Some treatment variables and helpers, depending on the regression spec.
+    d[, time_to_treatment := wk - lockdown
+    ][, treated := yr>=lockdown_yr
+    ][, post := time_to_treatment>=0][]
+    
+    ## Limit treatment window?
+    if (!is.null(treatment_window)) {
+      if (is.numeric(treatment_window)) {
+        d = d[time_to_treatment %in% treatment_window]
+      } else {
+        message('Treatment window is not numeric. Ignoring.\n')
+      }
+    }
+    
+    return(d)
+  }
+
+
 # Proportion of weekend activity ------------------------------------------
 
 prop_wends = 
@@ -569,7 +670,6 @@ prop_wends =
       }}
     
   }
-
 
 # Proportion of activity outside normal office hours ----------------------
 
