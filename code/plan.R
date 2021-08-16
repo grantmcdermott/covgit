@@ -1,6 +1,13 @@
 plan =
   drake_plan(
     
+    bad_dates = bad_dates_func(c('2015-02-01', 
+                                 '2016-02-01', 
+                                 '2018-04-03', 
+                                 '2020-08-21')),
+    
+    lockdown_dates = fread(here('data/lockdown-dates.csv')),
+    
 # Global ------------------------------------------------------------------
 
     ## Get 2015--2020 global activity data

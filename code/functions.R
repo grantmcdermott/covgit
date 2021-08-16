@@ -21,6 +21,17 @@ completeDT <- function(DT, cols, defs = NULL) {
 } 
 
 
+# Bad dates ---------------------------------------------------------------
+
+## Simple function for adding a buffer around 'bad' dates, e.g. where GitHub
+## was down
+bad_dates_func = function(dates) {
+  bad_dates = as.IDate(dates) 
+  bad_dates = sort(bad_dates + rep(0:length(bad_dates), length(bad_dates)))
+  return(bad_dates)
+}
+
+
 # get_gh_activity -----------------------------------------------------------
 
 #' Get counts of daily GitHub push (and commit) activity using Google BigQuery.

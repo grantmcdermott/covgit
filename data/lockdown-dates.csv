@@ -1,4 +1,5 @@
 location,country_code,lockdown,comment
+Global,,2020-03-15,Guestimate
 London,gb,2020-03-23,National stay at home order
 "New York, NY",us,2020-03-22,New York State on PAUSE
 "San Francisco, CA",us,2020-03-16,County shelter-in-place order
