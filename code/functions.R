@@ -534,7 +534,7 @@ gender_prep = function(data) {
   d[, location := gsub(' \\(gender\\)', '', location)]
   d = d[gender!=3]
   gender_lables = c('0' = 'Female', '1' = 'Male')
-  d[, gender := factor(gender, labels = gender_lables)]
+  d[, gender := factor(gender, labels = gender_lables)][]
   return(d)
 }
 
@@ -658,7 +658,7 @@ prop_plot =
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
            start_week = 2, end_week = 50, treat_line = NULL,
            title = 'auto', caption = 'auto',
-           scales = NULL,
+           scales = NULL, ncol = NULL, labeller = 'label_value',
            ...) {
     
     type = match.arg(type)
@@ -680,10 +680,13 @@ prop_plot =
     col_vals[highlight_year] = highlight_col
     
     # if (is.null(data$location)) data$location = toupper(data$country_code)
-    if (is.null(treat_line)) treat_line = data$lockdown[1]
     
     gvars = c('location', 'yr', 'wk')
     if (by_gender) gvars = c(gvars, 'gender')
+    
+    if (is.null(treat_line)) {
+      treat_lines = data[, .(treat_line = first(lockdown)), by = location]
+      }
     
     data = melt(data[wk >= start_week & wk<=end_week],
                 measure = mcols)
@@ -707,15 +710,23 @@ prop_plot =
       ggplot(aes(wk, value, col = as.factor(yr))) + 
       geom_line() + 
       geom_line(data = data[yr==highlight_year], col = highlight_col) +
-      geom_vline(xintercept = treat_line, lty = 2) + 
+      {
+        if (!is.null(treat_line)) {
+          geom_vline(xintercept = treat_line, lty = 2) 
+          } else {
+            geom_vline(data = treat_lines, aes(xintercept = treat_line), lty = 2)
+          }
+        } +
       labs(x = 'Week of year', y = 'Proportion', title = title, caption = caption) +
       scale_y_percent(limits = ylim) +
       scale_colour_manual(values = col_vals) +
       theme(legend.position = 'bottom', legend.title = element_blank()) +
-      {if(by_gender) {
-        facet_wrap(~ location + stringr::str_to_title(variable) + gender, scales = scales)
+      {if (by_gender) {
+        facet_wrap(~ location + stringr::str_to_title(variable) + gender, 
+                   scales = scales, ncol = ncol, labeller = labeller)
       } else {
-        facet_wrap(~ location + stringr::str_to_title(variable), scales = scales)
+        facet_wrap(~ location + stringr::str_to_title(variable), 
+                   scales = scales, ncol = ncol, labeller = labeller)
       }}
     
   }
