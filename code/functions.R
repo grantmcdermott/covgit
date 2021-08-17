@@ -534,9 +534,9 @@ collapse_prop =
            groups = NULL, 
            treatment_window = NULL,
            min_year = NULL,
-           bad_weeks=NULL, drop_wk1 = TRUE) {
+           bad_dates=NULL, drop_wk1 = TRUE, drop_wk53 = TRUE) {
     
-    d = copy(data)
+    d = copy(data)[date %ni% bad_dates]
     
     type = match.arg(type)
     
@@ -573,9 +573,10 @@ collapse_prop =
       }
     } 
     
-    ## Drop the first week of the year? Especially sensitive to idiosyncratic
-    ## timing and holidays.
+    ## Drop the weeks 1 and 53? Especially sensitive to idiosyncratic timing and 
+    ## holidays.
     if (drop_wk1) d = d[wk!= 1]
+    if (drop_wk53) d = d[wk!= 53]
     
     d[, ':=' (lockdown = isoweek(lockdown), lockdown_yr = year(lockdown))]
     
@@ -602,8 +603,13 @@ collapse_prop =
     setnames(d, old = 'type_col', new = type)
     
     ## We also need to filter our bad dates (now weeks), since they will distort
-    ## things at the week level too. Each "set" falls in the same week.
-    if (!is.null(bad_weeks)) {
+    ## things at the week level too.
+    if (!is.null(bad_dates)) {
+      bad_weeks = data.table(date = bad_dates, 
+                             wk = isoweek(bad_dates), 
+                             yr = year(bad_dates),
+                             bweek = TRUE)[, .(yr, wk, bweek)]
+      bad_weeks = unique(bad_weeks)
       d = merge(d, bad_weeks, all.x = TRUE)[is.na(bweek)][, bweek := NULL]
     }
     
