@@ -7,7 +7,7 @@ plan =
                                  '2018-04-03', 
                                  '2020-08-21')),
     
-    lockdown_dates = fread(here('data/lockdown-dates.csv')),
+    lockdown_dates = fread(here('data/lockdown-dates.csv'))[, .SD[1], by = location],
     
 # Global ------------------------------------------------------------------
 
@@ -367,211 +367,167 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
 # * Proportion of weekend activity ----------------------------------------
 
     ## ** Global ----
-    g_prop_wends = prop_wends(g, ylim = c(0.15, 0.25)),
+    g_prop_wends = prop_plot(
+      merge(g, lockdown_dates),
+      bad_dates = bad_dates,
+      ylim = c(0.15, 0.25)
+      ),
     ## ** LON ----
-    lon_prop_wends = prop_wends(
-      lon[year(date)>=2017, 
-          lapply(.SD, sum), .SDcols = c('events', 'users'), 
-          by = .(location, date)],
-      ylim = c(0.10, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-23'))-1
+    lon_prop_wends = prop_plot(
+      merge(lon, lockdown_dates),
+      bad_dates = bad_dates, 
+      min_year = 2017#, ylim = c(0.10, 0.25)
       ),
     ## ** LON (gender) ----
-    lon_gender_prop_wends = prop_wends(
-      lon_gender[year(date)>=2017 & gender!=3, 
-                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
-                        location, date)],
-      by_gender = TRUE,
-      ylim = c(0.10, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-23'))-1
+    lon_gender_prop_wends = prop_plot(
+      merge(gender_prep(lon_gender), 
+            lockdown_dates),
+      bad_dates = bad_dates, min_year = 2017,
+      by_gender = TRUE#, ylim = c(0.10, 0.25)
       ),
     ## ** NYC ----
-    nyc_prop_wends = prop_wends(
-      nyc[year(date)>=2017, 
-          lapply(.SD, sum), .SDcols = c('events', 'users'), 
-          by = .(location, date)],
-      ylim = c(0.10, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-22'))-1
-    ),
+    nyc_prop_wends = prop_plot(
+      merge(nyc, lockdown_dates),
+      bad_dates = bad_dates, 
+      min_year = 2017#, ylim = c(0.10, 0.25)
+      ),
     ## ** NYC (gender) ----
-    nyc_gender_prop_wends = prop_wends(
-      nyc_gender[year(date)>=2017 & gender!=3, 
-                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
-                        location, date)],
-      by_gender = TRUE,
-      ylim = c(0.10, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-22'))-1
+    nyc_gender_prop_wends = prop_plot(
+      merge(gender_prep(nyc_gender), 
+            lockdown_dates),
+      bad_dates = bad_dates, min_year = 2017,
+      by_gender = TRUE#, ylim = c(0.10, 0.25)
       ),
     ## ** SFO ----
-    sfo_prop_wends = prop_wends(
-      sfo[year(date)>=2017, 
-          lapply(.SD, sum), .SDcols = c('events', 'users'), 
-          by = .(location, date)],
-      ylim = c(0.10, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-19'))-1
-    ),
+    sfo_prop_wends = prop_plot(
+      merge(sfo, lockdown_dates),
+      bad_dates = bad_dates, 
+      min_year = 2017#, ylim = c(0.10, 0.25)
+      ),
     ## ** SFO (gender) ----
-    sfo_gender_prop_wends = prop_wends(
-      sfo_gender[year(date)>=2017 & gender!=3, 
-                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
-                        location, date)],
-      by_gender = TRUE,
-      ylim = c(0.05, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-19'))-1
+    sfo_gender_prop_wends = prop_plot(
+      merge(gender_prep(sfo_gender), 
+            lockdown_dates),
+      bad_dates = bad_dates, min_year = 2017,
+      by_gender = TRUE#, ylim = c(0.10, 0.25)
       ),
     ## ** BEI ----
-    bei_prop_wends = prop_wends(
-      bei[year(date)>=2017, 
-          lapply(.SD, sum), .SDcols = c('events', 'users'), 
-          by = .(location, date)],
-      ylim = c(0.10, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-02-10'))-1
-    ),
+    bei_prop_wends = prop_plot(
+      merge(bei, lockdown_dates),
+      bad_dates = bad_dates, 
+      min_year = 2017#, ylim = c(0.10, 0.25)
+      ),
     ## ** BLR ----
-    blr_prop_wends = prop_wends(
-      blr[year(date)>=2017, 
-          lapply(.SD, sum), .SDcols = c('events', 'users'), 
-          by = .(location, date)],
-      ylim = c(0.15, 0.30),
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-24'))-1
-    ),
+    blr_prop_wends = prop_plot(
+      merge(blr, lockdown_dates),
+      bad_dates = bad_dates, 
+      min_year = 2017#, ylim = c(0.10, 0.25)
+      ),
     ## ** BLR (gender) ----
-    blr_gender_prop_wends = prop_wends(
-      blr_gender[year(date)>=2017 & gender!=3, 
-                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
-                        location, date)],
-      by_gender = TRUE,
-      ylim = c(0.10, 0.30), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-24'))-1
+    blr_gender_prop_wends = prop_plot(
+      merge(gender_prep(blr_gender), 
+            lockdown_dates),
+      bad_dates = bad_dates, min_year = 2017,
+      by_gender = TRUE#, ylim = c(0.10, 0.25)
       ),
     ## ** SEA ----
-    sea_prop_wends = prop_wends(
-      sea[year(date)>=2017, 
-          lapply(.SD, sum), .SDcols = c('events', 'users'), 
-          by = .(location, date)],
-      ylim = c(0.10, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-04'))-1
-    ),
+    sea_prop_wends = prop_plot(
+      merge(sea, lockdown_dates),
+      bad_dates = bad_dates, 
+      min_year = 2017#, ylim = c(0.10, 0.25)
+      ),
     ## ** SEA (gender) ----
-    sea_gender_prop_wends = prop_wends(
-      sea_gender[year(date)>=2017 & gender!=3, 
-                 lapply(.SD, sum), .SDcols = c('events', 'users'), 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')),
-                        location, date)],
-      by_gender = TRUE,
-      ylim = c(0.05, 0.25), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-04'))-1
+    sea_gender_prop_wends = prop_plot(
+      merge(gender_prep(sea_gender), 
+            lockdown_dates),
+      bad_dates = bad_dates, min_year = 2017,
+      by_gender = TRUE#, ylim = c(0.10, 0.25)
       ),
 
 # Proportion of out of hours activity -------------------------------------
 
-    ## ** LON ----
-    lon_prop_whours = prop_whours(
-      lon[year(date)>=2017],
-      # ylim = c(0.25, 0.40),
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-23'))-1
-      ),
-    ## ** LON (gender) ----
-    lon_gender_prop_whours = prop_whours(
-      lon_gender[year(date)>=2017 & gender!=3, 
-                 .SD, 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
-      by_gender = TRUE,
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-23'))-1
-      ),
-    ## ** NYC ----
-    nyc_prop_whours = prop_whours(
-      nyc[year(date)>=2017],
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-16'))-1
-    ),
-    ## ** NYC (gender) ----
-    nyc_gender_prop_whours = prop_whours(
-      nyc_gender[year(date)>=2017 & gender!=3, 
-                 .SD, 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
-      by_gender = TRUE,
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-16'))-1
-    ),
-    ## ** SFO ----
-    sfo_prop_whours = prop_whours(
-      sfo[year(date)>=2017],
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-16'))-1
-      ),
-    ## ** SFO (gender) ----
-    sfo_gender_prop_whours = prop_whours(
-      sfo_gender[year(date)>=2017 & gender!=3, 
-                 .SD, 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
-      by_gender = TRUE,
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-16'))-1
-      ),
-    ## ** BEI ----
-    bei_prop_whours = prop_whours(
-      bei[year(date)>=2017],
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-02-10'))-1
-    ),
-    ## ** BLR ----
-    blr_prop_whours = prop_whours(
-      blr[year(date)>=2017],
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-24'))-1
-    ),
-    ## ** BLR (gender) ----
-    blr_gender_prop_whours = prop_whours(
-      blr_gender[year(date)>=2017 & gender!=3, 
-                 .SD, 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
-      by_gender = TRUE,
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-24'))-1
-      ),
-    ## ** SEA ----
-    sea_prop_whours = prop_whours(
-      sea[year(date)>=2017],
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-04'))-1
-    ),
-    ## ** SEA (gender) ----
-    sea_gender_prop_whours = prop_whours(
-      sea_gender[year(date)>=2017 & gender!=3, 
-                 .SD, 
-                 by = .(gender=factor(gender, label=c('0'='Female', '1'='Male')))], 
-      by_gender = TRUE,
-      # ylim = c(0.25, 0.40), 
-      # end_week = 30,
-      treat_line = isoweek(as.Date('2020-03-04'))-1
-    )
+      ## ** LON ----
+      lon_prop_whours = prop_plot(
+        merge(lon, lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, 
+        min_year = 2017#, ylim = c(0.25, 0.40)
+        ),
+      ## ** LON (gender) ----
+      lon_gender_prop_whours = prop_plot(
+        merge(gender_prep(lon_gender), 
+              lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, min_year = 2017,
+        by_gender = TRUE#, ylim = c(0.25, 0.40)
+        ),
+      ## ** NYC ----
+      nyc_prop_whours = prop_plot(
+        merge(nyc, lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, 
+        min_year = 2017#, ylim = c(0.25, 0.40)
+        ),
+      ## ** NYC (gender) ----
+      nyc_gender_prop_whours = prop_plot(
+        merge(gender_prep(nyc_gender), 
+              lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, min_year = 2017,
+        by_gender = TRUE#, ylim = c(0.25, 0.40)
+        ),
+      ## ** SFO ----
+      sfo_prop_whours = prop_plot(
+        merge(sfo, lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, 
+        min_year = 2017#, ylim = c(0.25, 0.40)
+        ),
+      ## ** SFO (gender) ----
+      sfo_gender_prop_whours = prop_plot(
+        merge(gender_prep(sfo_gender), 
+              lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, min_year = 2017,
+        by_gender = TRUE#, ylim = c(0.25, 0.40)
+        ),
+      ## ** BEI ----
+      bei_prop_whours = prop_plot(
+        merge(bei, lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, 
+        min_year = 2017#, ylim = c(0.25, 0.40)
+        ),
+      ## ** BLR ----
+      blr_prop_whours = prop_plot(
+        merge(blr, lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, 
+        min_year = 2017#, ylim = c(0.25, 0.40)
+        ),
+      ## ** BLR (gender) ----
+      blr_gender_prop_whours = prop_plot(
+        merge(gender_prep(blr_gender), 
+              lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, min_year = 2017,
+        by_gender = TRUE#, ylim = c(0.25, 0.40)
+        ),
+      ## ** SEA ----
+      sea_prop_whours = prop_plot(
+        merge(sea, lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, 
+        min_year = 2017#, ylim = c(0.25, 0.40)
+        ),
+      ## ** SEA (gender) ----
+      sea_gender_prop_whours = prop_plot(
+        merge(gender_prep(sea_gender), 
+              lockdown_dates),
+        type = 'whours',
+        bad_dates = bad_dates, min_year = 2017,
+        by_gender = TRUE#, ylim = c(0.25, 0.40)
+        )
 
   )
 
