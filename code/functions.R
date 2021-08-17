@@ -524,6 +524,20 @@ get_gh_activity_year =
   }
 
 
+
+# gender_prep -------------------------------------------------------------
+
+## Convenience function for dropping unisex cases and then labeling.
+
+gender_prep = function(data) {
+  d = copy(data)
+  d[, location := gsub(' \\(gender\\)', '', location)]
+  d = d[gender!=3]
+  gender_lables = c('0' = 'Female', '1' = 'Male')
+  d[, gender := factor(gender, labels = gender_lables)]
+  return(d)
+}
+
 # Collapse by wend or whours proportions ----------------------------------
 
 collapse_prop =
