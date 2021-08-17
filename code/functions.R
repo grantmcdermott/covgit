@@ -531,10 +531,11 @@ collapse_prop =
            type = c('wend', 'whours'), 
            work_hours = 9:18, excl_wends = FALSE, ## whours-specific args
            measure = c('both', 'events', 'users'), 
-           groups = NULL, 
+           by_gender = FALSE, 
            treatment_window = NULL,
            min_year = NULL,
-           bad_dates=NULL, drop_wk1 = TRUE, drop_wk53 = TRUE) {
+           bad_dates=NULL, drop_wk1 = TRUE, drop_wk53 = TRUE,
+           ...) {
     
     d = copy(data)[date %ni% bad_dates]
     
@@ -543,7 +544,10 @@ collapse_prop =
     mcols = match.arg(measure)
     if (mcols=='both') mcols = c('events', 'users')
     
-    req_cols = c('date', 'lockdown', mcols, groups)
+    req_cols = c('date', 'lockdown', mcols)
+    if (by_gender) req_cols = c(req_cols, 'gender')
+    
+    
     miss_cols = !(req_cols %in% names(d))
     if (TRUE %in% miss_cols) {
       stop(paste('Expected columns: ', 
@@ -581,7 +585,7 @@ collapse_prop =
     d[, ':=' (lockdown = isoweek(lockdown), lockdown_yr = year(lockdown))]
     
     gvars = c('location', 'yr', 'wk', 'type_col', 'lockdown', 'lockdown_yr')
-    if (!is.null(groups)) gvars = c(gvars, groups)
+    if (by_gender) gvars = c(gvars, 'gender')
     gvars2 = setdiff(gvars, 'type_col')
     
     setkeyv(d, gvars)
@@ -630,6 +634,77 @@ collapse_prop =
     return(d)
   }
 
+
+# Proportions plot --------------------------------------------------------
+
+prop_plot = 
+  function(data, 
+           type = c('wend', 'whours'),
+           measure = c('both', 'events', 'users'), by_gender = FALSE,
+           highlight_year = NULL, highlight_col = NULL, ylim = NULL,
+           start_week = 2, end_week = 50, treat_line = NULL,
+           title = 'auto', caption = 'auto',
+           scales = NULL,
+           ...) {
+    
+    type = match.arg(type)
+    
+    mcols = match.arg(measure)
+    if (mcols=='both') mcols = c('events', 'users')
+    
+    data = collapse_prop(data, type = type, measure = measure, by_gender = by_gender,
+                         ...)
+    
+    if (is.null(highlight_year)) highlight_year = 2020
+    highlight_year = paste0(highlight_year)
+    if (is.null(highlight_col)) highlight_col = 'dodgerblue'
+    
+    col_vals = c('2015' = 'grey15', '2016' = 'grey30', '2017' = 'grey45',
+                 '2018' = 'grey60', '2019' = 'grey75', '2020' = 'grey90')
+    
+    col_vals = col_vals[paste(sort(unique(data$yr)))]
+    col_vals[highlight_year] = highlight_col
+    
+    # if (is.null(data$location)) data$location = toupper(data$country_code)
+    if (is.null(treat_line)) treat_line = data$lockdown[1]
+    
+    gvars = c('location', 'yr', 'wk')
+    if (by_gender) gvars = c(gvars, 'gender')
+    
+    data = melt(data[wk >= start_week & wk<=end_week],
+                measure = mcols)
+    
+    if (title=='auto') {
+      if (type=='wend') {
+        title = 'Proportion of activity on weekends'
+      } else {
+        title = 'Proportion of activity outside normal office hours'
+      }
+    }
+    if (caption=='auto') {
+      if (type=='wend') {
+        caption = NULL
+      } else {
+        caption = 'Office hours defined as 9 am to 6 pm.'
+      }
+    }
+    
+    data %>% 
+      ggplot(aes(wk, value, col = as.factor(yr))) + 
+      geom_line() + 
+      geom_line(data = data[yr==highlight_year], col = highlight_col) +
+      geom_vline(xintercept = treat_line, lty = 2) + 
+      labs(x = 'Week of year', y = 'Proportion', title = title, caption = caption) +
+      scale_y_percent(limits = ylim) +
+      scale_colour_manual(values = col_vals) +
+      theme(legend.position = 'bottom', legend.title = element_blank()) +
+      {if(by_gender) {
+        facet_wrap(~ location + stringr::str_to_title(variable) + gender, scales = scales)
+      } else {
+        facet_wrap(~ location + stringr::str_to_title(variable), scales = scales)
+      }}
+    
+  }
 
 # Proportion of weekend activity ------------------------------------------
 
