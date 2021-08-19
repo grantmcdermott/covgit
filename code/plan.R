@@ -423,8 +423,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       bad_dates = bad_dates, min_year = 2017,
       by_gender = TRUE, 
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-      ) +
-      theme(panel.grid.minor.y = element_blank()),
+      ),
     gender_prop_wend_events_ggsave = ggsave(
       here('figs/prop-wend-gender-events.pdf'), 
       plot = gender_prop_wend_events,
@@ -437,8 +436,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       bad_dates = bad_dates, min_year = 2017,
       by_gender = TRUE, 
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-      ) +
-      theme(panel.grid.minor.y = element_blank()),
+      ),
     gender_prop_wend_users_ggsave = ggsave(
       here('figs/prop-wend-gender-users.pdf'), 
       plot = gender_prop_wend_users,
@@ -496,8 +494,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       bad_dates = bad_dates, min_year = 2017,
       by_gender = TRUE, 
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-      ) +
-      theme(panel.grid.minor.y = element_blank()),
+      ),
     gender_prop_whours_events_ggsave = ggsave(
       here('figs/prop-whours-gender-events.pdf'),
       plot = gender_prop_whours_events,
@@ -511,8 +508,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       bad_dates = bad_dates, min_year = 2017,
       by_gender = TRUE, 
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-      ) +
-      theme(panel.grid.minor.y = element_blank()),
+      ),
     gender_prop_whours_users_ggsave = ggsave(
       here('figs/prop-whours-gender-users.pdf'), 
       plot = gender_prop_whours_users,

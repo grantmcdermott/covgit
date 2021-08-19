@@ -528,11 +528,12 @@ get_gh_activity_year =
 # gender_prep -------------------------------------------------------------
 
 ## Convenience function for dropping unisex cases and then labeling.
+## Aside: Using ignore to avoid https://github.com/ropensci/drake/issues/578
 
 gender_prep = function(data) {
   d = copy(data)
   d[, location := gsub(' \\(gender\\)', '', location)]
-  d = d[gender!=3]
+  d = d[ignore(gender)!=3]
   gender_lables = c('0' = 'Female', '1' = 'Male')
   d[, gender := factor(gender, labels = gender_lables)][]
   return(d)
@@ -657,6 +658,7 @@ prop_plot =
            measure = c('both', 'events', 'users'), by_gender = FALSE,
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
            start_week = 2, end_week = 50, treat_line = NULL,
+           drop_state = TRUE,
            title = 'auto', caption = 'auto',
            scales = NULL, ncol = NULL, labeller = 'label_value',
            ...) {
@@ -673,12 +675,15 @@ prop_plot =
     highlight_year = paste0(highlight_year)
     if (is.null(highlight_col)) highlight_col = 'dodgerblue'
     
-    col_vals = c('2015' = 'grey15', '2016' = 'grey30', '2017' = 'grey45',
-                 '2018' = 'grey60', '2019' = 'grey75', '2020' = 'grey90')
+    col_vals = highlight_col
+    names(col_vals) = highlight_year
+    col_vals = c('Recent years' = 'grey75', 'Recent mean' = 'grey50', col_vals)
+    lwd_vals = c(0.35, 0.7, 0.7); names(lwd_vals) = names(col_vals)
     
-    col_vals = col_vals[paste(sort(unique(data$yr)))]
-    col_vals[highlight_year] = highlight_col
-    
+    ## Simplify location entry by dropping state? Mostly for plotting aesthetics...
+    if (drop_state) {
+      data[, location := gsub(',.*', '', location)][]
+    }
     # if (is.null(data$location)) data$location = toupper(data$country_code)
     
     gvars = c('location', 'yr', 'wk')
@@ -691,6 +696,14 @@ prop_plot =
     data = melt(data[wk >= start_week & wk<=end_week],
                 measure = mcols)
     
+    data_nhy_mean = data[yr!=highlight_year, 
+                         .(value = mean(value), yr = first(yr)), 
+                         by = setdiff(c(gvars, 'variable'), 'yr')]
+    
+    data[, col_grp := fifelse(yr==highlight_year, highlight_year, 'Recent years')]
+    data_nhy_mean[, col_grp := 'Recent mean']
+    
+    title_auto = title ## for title adjustment along with facet vars below
     if (title=='auto') {
       if (type=='wend') {
         title = 'Proportion of activity on weekends'
@@ -706,28 +719,65 @@ prop_plot =
       }
     }
     
+    ## Facet vars (and adjusted title)
+    if (length(mcols)==2) {
+      if (by_gender) {
+        facet_vars = vars(location, stringr::str_to_title(variable), gender)
+      } else {
+        facet_vars = vars(location, stringr::str_to_title(variable))
+      }
+    } else {
+      if (by_gender) {
+        facet_vars = vars(location, gender)
+      } else {
+        facet_vars = vars(location)
+      }
+      # Extra title adjustment
+      if (title_auto=='auto') {
+        noun = ifelse(mcols=='events', 'event activity', 'active users')
+        if (type=='wend') {
+          title = paste('Proportion of', noun, 'on weekends')
+        } else {
+          title = paste('Proportion of', noun, 'outside normal office hours')
+        }
+      }
+    }
+    
+    # Hack for theme_tufte and expanded y limits
+    if (!is.null(ylim)) {
+      xrange = range(data$wk)
+      yrange = ylim
+    }
+    
     data %>% 
-      ggplot(aes(wk, value, col = as.factor(yr))) + 
+      ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, lwd = col_grp)) + 
       geom_line() + 
-      geom_line(data = data[yr==highlight_year], col = highlight_col) +
+      geom_line(data = data_nhy_mean) +
+      geom_line(data = data[yr==highlight_year]) +
       {
         if (!is.null(treat_line)) {
           geom_vline(xintercept = treat_line, lty = 2) 
           } else {
-            geom_vline(data = treat_lines, aes(xintercept = treat_line), lty = 2)
+            geom_vline(data = treat_lines, aes(xintercept = treat_line), lty = 2, col = 'black')
           }
         } +
       labs(x = 'Week of year', y = 'Proportion', title = title, caption = caption) +
       scale_y_percent(limits = ylim) +
       scale_colour_manual(values = col_vals) +
-      theme(legend.position = 'bottom', legend.title = element_blank()) +
-      {if (by_gender) {
-        facet_wrap(~ location + stringr::str_to_title(variable) + gender, 
-                   scales = scales, ncol = ncol, labeller = labeller)
-      } else {
-        facet_wrap(~ location + stringr::str_to_title(variable), 
-                   scales = scales, ncol = ncol, labeller = labeller)
-      }}
+      scale_size_manual(values = lwd_vals) +
+      facet_wrap(facet_vars, scales = scales, ncol = ncol, labeller = labeller) +
+      # theme(legend.position = 'bottom', legend.title = element_blank()) +
+      {
+        if (!is.null(ylim)) {
+          geom_rangeframe(data = data.frame(x = xrange, y = yrange), 
+                          aes(x, y), inherit.aes = FALSE)
+        } else {
+          geom_rangeframe(colour='black', show.legend = FALSE)
+        }
+      } +
+      coord_cartesian(clip="off") +
+      theme_tufte(base_family = 'Roboto Condensed', base_size = 12) + 
+      theme(legend.position = 'bottom', legend.title = element_blank())
     
   }
 
