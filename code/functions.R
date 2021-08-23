@@ -534,8 +534,7 @@ gender_prep = function(data) {
   d = copy(data)
   d[, location := gsub(' \\(gender\\)', '', location)]
   d = d[ignore(gender)!=3]
-  gender_lables = c('0' = 'Female', '1' = 'Male')
-  d[, gender := factor(gender, labels = gender_lables)][]
+  d$gender = factor(d$gender, labels = c('0' = 'Female', '1' = 'Male'))
   return(d)
 }
 
@@ -547,6 +546,7 @@ collapse_prop =
            work_hours = 9:18, excl_wends = FALSE, ## whours-specific args
            measure = c('both', 'events', 'users'), 
            by_gender = FALSE, 
+           simp_loc = TRUE,
            treatment_window = NULL,
            min_year = NULL,
            bad_dates=NULL, drop_wk1 = TRUE, drop_wk53 = TRUE,
@@ -646,6 +646,12 @@ collapse_prop =
       }
     }
     
+    ## Simplify location entry by dropping state? Mostly for plotting aesthetics...
+    if (simp_loc) {
+      d[, location := gsub(',.*', '', location)][]
+    }
+    # if (is.null(data$location)) data$location = toupper(data$country_code)
+    
     return(d)
   }
 
@@ -655,10 +661,11 @@ collapse_prop =
 prop_plot = 
   function(data, 
            type = c('wend', 'whours'),
-           measure = c('both', 'events', 'users'), by_gender = FALSE,
+           measure = c('both', 'events', 'users'), 
+           by_gender = FALSE,
+           simp_loc = TRUE,
            highlight_year = NULL, highlight_col = NULL, ylim = NULL,
            start_week = 2, end_week = 50, treat_line = NULL,
-           drop_state = TRUE,
            title = 'auto', caption = 'auto',
            scales = NULL, ncol = NULL, labeller = 'label_value',
            ...) {
@@ -668,7 +675,8 @@ prop_plot =
     mcols = match.arg(measure)
     if (mcols=='both') mcols = c('events', 'users')
     
-    data = collapse_prop(data, type = type, measure = measure, by_gender = by_gender,
+    data = collapse_prop(data, type = type, measure = measure, 
+                         by_gender = by_gender, simp_loc = simp_loc,
                          ...)
     
     if (is.null(highlight_year)) highlight_year = 2020
@@ -679,12 +687,6 @@ prop_plot =
     names(col_vals) = highlight_year
     col_vals = c('Recent years' = 'grey75', 'Recent mean' = 'grey50', col_vals)
     lwd_vals = c(0.35, 0.7, 0.7); names(lwd_vals) = names(col_vals)
-    
-    ## Simplify location entry by dropping state? Mostly for plotting aesthetics...
-    if (drop_state) {
-      data[, location := gsub(',.*', '', location)][]
-    }
-    # if (is.null(data$location)) data$location = toupper(data$country_code)
     
     gvars = c('location', 'yr', 'wk')
     if (by_gender) gvars = c(gvars, 'gender')
