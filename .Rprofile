@@ -13,3 +13,6 @@ if (Sys.info()[['sysname']] %in% c('Linux', 'Windows')) {
   # options(renv.config.mran.enabled = TRUE) ## TRUE by default
 }
 options(renv.config.repos.override = getOption("repos"))
+
+## Extra data.table print option
+options(datatable.print.class=TRUE, datatable.print.keys=TRUE)
