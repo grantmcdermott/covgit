@@ -377,100 +377,66 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       treat_date = c('2020-03-04', '2020-03-12', '2020-03-23') ## MS + Amazon remote work, school closure, and mayoral stay at home order mandate
     ),
 
-# * Proportion of weekend activity ----------------------------------------
 
-    ## ** Global ----
-    prop_wends_g = prop_plot(
+# * Proportion figures ----------------------------------------------------
+
+    ## ** Global (prop = weekends, measure = both) ----
+    prop_global_wend = prop_plot(
       merge(g, lockdown_dates),
+      prop = 'wend', measure = 'both',
       bad_dates = bad_dates,
-      ylim = c(0.15, 0.25)
+      treat_date2 = 10, ## Global treatment date
+      ylim = c(0.15, 0.25),
+      labeller = labeller(.multi_line=FALSE)
       ),
-    prop_wends_g_ggsave = ggsave(
-      here('figs/prop-wend-global.pdf'), 
-      plot = prop_wends_g,
+    prop_global_wend_ggsave = ggsave(
+      here('figs/prop-global-wend.pdf'), 
+      plot = prop_global_wend,
       width = 8, height = 5, device = cairo_pdf
       ),
 
-    ## ** Cities ----
-    prop_wend_cities = prop_plot(
+    ## ** Cities (prop = both, measure = events) ----
+    prop_cities_both_events = prop_plot(
       merge(cities, lockdown_dates, by = 'location'),
+      prop = 'both', measure = 'events',
       bad_dates = bad_dates, 
       min_year = 2017, 
+      treat_date2 = 10, ## Global treatment date
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
       ),
-    prop_wend_cities_events_ggsave = ggsave(
-        here('figs/prop-wend-cities.pdf'), 
-        plot = prop_wend_cities,
-        width = 8, height = 10, device = cairo_pdf
-        ),
-
-    ## ** Gender events ----
-    prop_wend_gender_events = prop_plot(
-      merge(gender, lockdown_dates), measure = 'events',
-      bad_dates = bad_dates, min_year = 2017,
-      by_gender = TRUE, 
-      scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-      ),
-    prop_wend_gender_events_ggsave = ggsave(
-      here('figs/prop-wend-gender-events.pdf'), 
-      plot = prop_wend_gender_events,
+    prop_cities_both_events_ggsave = ggsave(
+      here('figs/prop-cities-both-events.pdf'), 
+      plot = prop_cities_both_events,
       width = 8, height = 10, device = cairo_pdf
       ),
 
-    ## ** Gender users -----
-    prop_wend_gender_users = prop_plot(
-      merge(gender, lockdown_dates), measure = 'users',
+    ## ** Gender (prop = wend, measure = events) ----
+    prop_gender_wend_events = prop_plot(
+      merge(gender, lockdown_dates), 
+      prop = 'wend', measure = 'events', 
       bad_dates = bad_dates, min_year = 2017,
+      treat_date2 = 10, ## Global treatment date
       by_gender = TRUE, 
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
       ),
-    prop_wend_gender_users_ggsave = ggsave(
-      here('figs/prop-wend-gender-users.pdf'), 
-      plot = prop_wend_gender_users,
+    prop_gender_wend_events_ggsave = ggsave(
+      here('figs/prop-gender-wend-events.pdf'), 
+      plot = prop_gender_wend_events,
       width = 8, height = 10, device = cairo_pdf
       ),
 
-# Proportion of out of hours activity -------------------------------------
-
-    ## ** Cities ----
-    prop_whours_cities = prop_plot(
-      merge(cities, lockdown_dates, by = 'location'),
-      type = 'whours',
-      bad_dates = bad_dates, 
-      min_year = 2017, 
-      scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-      ),
-    prop_whours_cities_ggsave = ggsave(
-      here('figs/prop-whours-cities.pdf'), 
-      plot = prop_whours_cities,
-      width = 8, height = 10, device = cairo_pdf
-      ),
-
-    ## ** Gender events ----
-    prop_whours_gender_events = prop_plot(
-      merge(gender, lockdown_dates), measure = 'events',
-      type = 'whours',
+    ## ** Gender (prop = ohrs, measure = events) ----
+    prop_gender_ohrs_events = prop_plot(
+      merge(gender, lockdown_dates), 
+      prop = 'ohrs', measure = 'events', 
       bad_dates = bad_dates, min_year = 2017,
+      treat_date2 = 10, ## Global treatment date
       by_gender = TRUE, 
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
       ),
-    prop_whours_gender_events_ggsave = ggsave(
-      here('figs/prop-whours-gender-events.pdf'),
-      plot = prop_whours_gender_events,
-      width = 8, height = 10, device = cairo_pdf
-      ),
-
-    ## ** Gender users ----
-    prop_whours_gender_users = prop_plot(
-      merge(gender, lockdown_dates), measure = 'users',
-      type = 'whours',
-      bad_dates = bad_dates, min_year = 2017,
-      by_gender = TRUE, 
-      scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-      ),
-    prop_whours_gender_users_ggsave = ggsave(
-      here('figs/prop-whours-gender-users.pdf'), 
-      plot = prop_whours_gender_users,
+    prop_gender_ohrs_events_ggsave = ggsave(
+      here('figs/prop-gender-ohrs-events.pdf'), 
+      plot = prop_gender_ohrs_events,
       width = 8, height = 10, device = cairo_pdf
       )
 

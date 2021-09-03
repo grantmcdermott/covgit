@@ -542,19 +542,20 @@ gender_prep = function(data) {
 
 collapse_prop =
   function(data, 
-           type = c('wend', 'whours'), 
-           work_hours = 9:18, excl_wends = FALSE, ## whours-specific args
+           prop = c('both', 'wend', 'ohrs'), 
+           work_hours = 9:18, excl_wends = FALSE, ## ohrs-specific args
            measure = c('both', 'events', 'users'), 
            by_gender = FALSE, 
            simp_loc = TRUE,
            treatment_window = NULL,
            min_year = NULL,
-           bad_dates=NULL, drop_wk1 = TRUE, drop_wk53 = TRUE,
+           bad_dates=NULL, start_week = 2, end_week = 50,
            ...) {
     
-    d = copy(data)[date %ni% bad_dates]
+    d = copy(data)[, date := as.IDate(date)][date %ni% bad_dates]
     
-    type = match.arg(type)
+    prop = match.arg(prop)
+    if (prop=='both') prop = c('wend', 'ohrs')
     
     mcols = match.arg(measure)
     if (mcols=='both') mcols = c('events', 'users')
@@ -574,13 +575,28 @@ collapse_prop =
     ## Extra date and calendar vars (only create if missing)
     if ('yr' %ni% names(d)) d[, yr := year(date)]
     if ('wk' %ni% names(d)) d[, wk := isoweek(date)]
-    if (type %ni% names(d))  {
-      if (type=='wend') d[, type_col := wday(date) %in% c(1, 7)]
-      if (type=='whours') d[, type_col := hr %in% work_hours]
+    if (any(prop %ni% names(d)))  {
+      if ('wend' %in% prop) d[, wend := wday(date) %in% c(1, 7)]
+      if ('ohrs' %in% prop) d[, ohrs := hr %ni% work_hours]
     }
     
-    if (type=='whours' & excl_wends) {
-      d = d[wday(date) %in% 2:6]
+    d = d[wk>=start_week & wk <= end_week]
+    
+    if (excl_wends) {
+      if (prop=='ohrs') {
+        d = d[wday(date) %in% 2:6]
+      } else {
+        message("Can only exlude weekends if `prop` doesn't include 'wend'. Ignoring.\n")
+      }
+    }
+    d = melt(d, measure.vars = prop, variable.name = 'prop', value.name = 'prop_val')
+    
+    if (length(prop)==2) {
+      d[, prop := factor(prop, labels = c('wend' = 'Weekends', 'ohrs' = 'Out-of-hours'))]
+    } else if (prop=='wend') {
+      d[, prop := factor(prop, labels = c('wend' = 'Weekends'))]
+    } else if (prop=='ohrs') {
+      d[, prop := factor(prop, labels = c('ohrs' = 'Out-of-hours'))]
     }
     
     ## Min year for comparison group?
@@ -592,16 +608,11 @@ collapse_prop =
       }
     } 
     
-    ## Drop the weeks 1 and 53? Especially sensitive to idiosyncratic timing and 
-    ## holidays.
-    if (drop_wk1) d = d[wk!= 1]
-    if (drop_wk53) d = d[wk!= 53]
-    
     d[, ':=' (lockdown = isoweek(lockdown), lockdown_yr = year(lockdown))]
     
-    gvars = c('location', 'yr', 'wk', 'type_col', 'lockdown', 'lockdown_yr')
+    gvars = c('location', 'yr', 'wk', 'prop', 'prop_val', 'lockdown', 'lockdown_yr')
     if (by_gender) gvars = c(gvars, 'gender')
-    gvars2 = setdiff(gvars, 'type_col')
+    gvars2 = setdiff(gvars, c('prop_val'))
     
     setkeyv(d, gvars)
     
@@ -611,15 +622,12 @@ collapse_prop =
         .SDcols = mcols,
         by = gvars
       ][,
-        c(list(type_col = type_col), 
+        c(list(prop_val = prop_val), 
           lapply(.SD, prop.table)),
         .SDcols = mcols,
-        by = gvars2]
-    
-    if (type=='wend') d = d[(type_col)]
-    if (type=='whours') d = d[!(type_col)]
-    
-    setnames(d, old = 'type_col', new = type)
+        by = gvars2
+      ][(prop_val)
+      ][, prop_val := NULL][]
     
     ## We also need to filter our bad dates (now weeks), since they will distort
     ## things at the week level too.
@@ -629,7 +637,7 @@ collapse_prop =
                              yr = year(bad_dates),
                              bweek = TRUE)[, .(yr, wk, bweek)]
       bad_weeks = unique(bad_weeks)
-      d = merge(d, bad_weeks, all.x = TRUE)[is.na(bweek)][, bweek := NULL]
+      d = merge(d, bad_weeks, all.x = TRUE)[is.na(bweek)][, bweek := NULL][]
     }
     
     ## Some treatment variables and helpers, depending on the regression spec.
@@ -652,6 +660,8 @@ collapse_prop =
     }
     # if (is.null(data$location)) data$location = toupper(data$country_code)
     
+    setorder(d, location, prop, yr, wk)
+    
     return(d)
   }
 
@@ -660,43 +670,52 @@ collapse_prop =
 
 prop_plot = 
   function(data, 
-           type = c('wend', 'whours'),
+           prop = c('both', 'wend', 'ohrs'), 
+           work_hours = 9:18,
            measure = c('both', 'events', 'users'), 
            by_gender = FALSE,
            simp_loc = TRUE,
-           highlight_year = NULL, highlight_col = NULL, ylim = NULL,
-           start_week = 2, end_week = 50, treat_line = NULL,
+           highlight_year = NULL, highlight_col = NULL, 
+           ylim = NULL,
+           start_week = 2, end_week = 50, 
+           treat_date = NULL, treat_date2 = NULL,
            title = 'auto', caption = 'auto',
-           scales = NULL, ncol = NULL, labeller = 'label_value',
+           scales = NULL, ncol = NULL, 
+           labeller = 'label_value',
            ...) {
     
-    type = match.arg(type)
+    prop = match.arg(prop)
+    if (prop=='both') tcols = c('wend', 'ohrs')
     
     mcols = match.arg(measure)
     if (mcols=='both') mcols = c('events', 'users')
     
-    data = collapse_prop(data, type = type, measure = measure, 
-                         by_gender = by_gender, simp_loc = simp_loc,
+    data = collapse_prop(data, 
+                         prop = prop, 
+                         measure = measure, 
+                         work_hours = work_hours,
+                         by_gender = by_gender, 
+                         simp_loc = simp_loc,
+                         start_week = start_week, end_week = end_week,
                          ...)
-    
+
     if (is.null(highlight_year)) highlight_year = 2020
     highlight_year = paste0(highlight_year)
-    if (is.null(highlight_col)) highlight_col = 'dodgerblue'
+    if (is.null(highlight_col)) highlight_col = '#E16A86'
     
     col_vals = highlight_col
     names(col_vals) = highlight_year
-    col_vals = c('Recent years' = 'grey75', 'Recent mean' = 'grey50', col_vals)
-    lwd_vals = c(0.35, 0.7, 0.7); names(lwd_vals) = names(col_vals)
+    col_vals = c('Recent years' = '#A4DDEF', 'Recent mean' = '#00A6CA', col_vals)
+    lwd_vals = c(0.4, 0.7, 0.7); names(lwd_vals) = names(col_vals)
     
-    gvars = c('location', 'yr', 'wk')
+    gvars = c('location', 'prop', 'yr', 'wk')
     if (by_gender) gvars = c(gvars, 'gender')
     
-    if (is.null(treat_line)) {
-      treat_lines = data[, .(treat_line = first(lockdown)), by = location]
-      }
+    if (is.null(treat_date)) {
+      treat_dates = data[, .(treat_date = first(lockdown)), by = location]
+    }
     
-    data = melt(data[wk >= start_week & wk<=end_week],
-                measure = mcols)
+    data = melt(data, measure = mcols)
     
     data_nhy_mean = data[yr!=highlight_year, 
                          .(value = mean(value), yr = first(yr)), 
@@ -707,48 +726,44 @@ prop_plot =
     
     title_auto = title ## for title adjustment along with facet vars below
     if (title=='auto') {
-      if (type=='wend') {
+      if (prop=='both') {
+        title = 'Proportion of activity'
+      } else if (prop=='wend') {
         title = 'Proportion of activity on weekends'
       } else {
         title = 'Proportion of activity outside normal office hours'
       }
     }
     if (caption=='auto') {
-      if (type=='wend') {
-        caption = NULL
+      if (prop %in% c('both', 'ohrs')) {
+        caption = paste0('Note: "Out-of-hours" defined as the period outside ', 
+                         head(work_hours, 1),' am to ', tail(work_hours, 1),' pm.')
       } else {
-        caption = 'Office hours defined as 9 am to 6 pm.'
+        caption = NULL
       }
     }
     
-    ## Facet vars (and adjusted title)
-    if (length(mcols)==2) {
-      if (by_gender) {
-        facet_vars = vars(location, stringr::str_to_title(variable), gender)
+    ## Facet vars
+    facet_vars = vars(location)
+    if (prop=='both') facet_vars = c(facet_vars, vars(prop))
+    if (length(mcols)==2) facet_vars = c(facet_vars, vars(stringr::str_to_title(variable)))
+    if (by_gender) facet_vars = c(facet_vars, vars(gender))
+    
+    # Extra title adjustment
+    if (title_auto=='auto' && length(mcols)==1 && prop!='both') {
+      noun = ifelse(mcols=='events', 'event activity', 'active users')
+      if (prop=='wend') {
+        title = paste('Proportion of', noun, 'occurring on weekends')
       } else {
-        facet_vars = vars(location, stringr::str_to_title(variable))
-      }
-    } else {
-      if (by_gender) {
-        facet_vars = vars(location, gender)
-      } else {
-        facet_vars = vars(location)
-      }
-      # Extra title adjustment
-      if (title_auto=='auto') {
-        noun = ifelse(mcols=='events', 'event activity', 'active users')
-        if (type=='wend') {
-          title = paste('Proportion of', noun, 'on weekends')
-        } else {
-          title = paste('Proportion of', noun, 'outside normal office hours')
-        }
+        title = paste('Proportion of', noun, 'occurring out-of-hours')
       }
     }
     
     # Hack for theme_tufte and expanded y limits
     if (!is.null(ylim)) {
-      xrange = range(data$wk)
+      xrange = range(0, data$wk)
       yrange = ylim
+      ylim[1] = ylim[1] - (ylim[2]-ylim[1])/20 ## extra little gap btwn the axes
     }
     
     data %>% 
@@ -757,12 +772,17 @@ prop_plot =
       geom_line(data = data_nhy_mean) +
       geom_line(data = data[yr==highlight_year]) +
       {
-        if (!is.null(treat_line)) {
-          geom_vline(xintercept = treat_line, lty = 2) 
-          } else {
-            geom_vline(data = treat_lines, aes(xintercept = treat_line), lty = 2, col = 'black')
-          }
-        } +
+        if (!is.null(treat_date)) {
+          geom_vline(xintercept = treat_date) 
+        } else {
+          geom_vline(data = treat_dates, aes(xintercept = treat_date), col = 'grey50')
+        }
+      } +
+      {
+        if (!is.null(treat_date2)) {
+          geom_vline(xintercept = treat_date2, col = 'grey50', lty = 2) 
+        }
+      } +
       labs(x = 'Week of year', y = 'Proportion', title = title, caption = caption) +
       scale_y_percent(limits = ylim) +
       scale_colour_manual(values = col_vals) +
