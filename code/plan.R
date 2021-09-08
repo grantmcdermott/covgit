@@ -324,13 +324,13 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
     # ** Global ----
     ts_global_events = ts_plot(g, bad_dates = bad_dates, measure = 'events'),
     ts_global_events_ggsave = ggsave(
-      here('figs/ts_global_events.pdf'), 
+      here('figs/ts-global-events.pdf'), 
       plot = ts_global_events,
       width = 8, height = 5, device = cairo_pdf
       ),
     ts_global_users = ts_plot(g, bad_dates = bad_dates, measure = 'users'),
     ts_global_users_ggsave = ggsave(
-      here('figs/ts_global_users.pdf'), 
+      here('figs/ts-global-users.pdf'), 
       plot = ts_global_users,
       width = 8, height = 5, device = cairo_pdf
       ),
