@@ -525,6 +525,61 @@ get_gh_activity_year =
 
 
 
+# Times series plot -------------------------------------------------------
+
+ts_plot = 
+  function(data, 
+           measure = c('events', 'users'),
+           bad_dates=bad_dates, 
+           theme = c('light', 'dark')) {
+    
+    measure = match.arg(measure)
+    theme = match.arg(theme)
+    strip_col = ifelse(theme=='light', 'black', 'white')
+    
+    ## bad weeks
+    bad_weeks = data.table(date = bad_dates, 
+                           wk = isoweek(bad_dates), 
+                           yr = year(bad_dates),
+                           bweek = TRUE)[, .(yr, wk, bweek)]
+    bad_weeks = unique(bad_weeks)
+    
+    ## weekly values
+    wd_levels = c('Mon','Tue','Wed','Thu','Fri','Sat','Sun')
+    d_wk = data[,
+                lapply(.SD, sum), 
+                .SDcols = measure,
+                by = .(yr = year(date), wk = isoweek(date), 
+                       wd = factor(weekdays(date, abbreviate = TRUE),
+                                   levels=wd_levels))] 
+    
+    d_wk = merge(d_wk, bad_weeks, all.x = TRUE)[is.na(bweek)][, bweek := NULL][]
+    
+    d_wk = melt(d_wk, measure.vars = measure)
+    
+    cvals = c(sequential_hcl(7, palette = "Blues 3")[1:5],
+              rev(sequential_hcl(4, palette = "Burg")[2:3]))
+    names(cvals) = levels(wd_levels)
+    
+    ggplot(d_wk, aes(wk, value/1e6)) +
+      geom_line(aes(col=wd) ) +
+      labs(x = 'Week of year', y = paste('Daily', measure, '(million)')) +
+      facet_wrap(~yr, nrow = 1) +
+      scale_color_manual(values = cvals) +
+      { 
+        if (theme=='light') {
+          theme_ipsum_rc(plot_margin = margin(5, 5, 5, 5), grid = 'XY', axis_title_just = 'c')
+        } else {
+          theme_modern_rc(plot_margin = margin(5, 5, 5, 5), grid = 'XY', axis_title_just = 'c')
+        } 
+      } +
+      theme(
+        legend.title = element_blank(),
+        panel.spacing.x = unit(0.5, "lines"), 
+        strip.text = element_text(hjust = 0.5, colour = strip_col)
+      )
+  }
+
 # activity_map ------------------------------------------------------------
 
 activity_map = 
