@@ -309,6 +309,16 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
 # Plots -------------------------------------------------------------------  
 
 
+# * Activity map ----------------------------------------------------------
+
+    activity_map_plot = activity_map(countries),
+    activity_map_plot_ggsave = ggsave(
+      here('figs/activity-map.pdf'), 
+      plot = activity_map_plot,
+      width = 8, height = 5, device = cairo_pdf
+    ),
+    
+
 # * Daily diffs -----------------------------------------------------------
     
     ## ** Global ----
@@ -387,6 +397,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       bad_dates = bad_dates,
       treat_date2 = 10, ## Global treatment date
       ylim = c(0.15, 0.25),
+      scales = 'free_y',
       labeller = labeller(.multi_line=FALSE)
       ),
     prop_global_wend_ggsave = ggsave(

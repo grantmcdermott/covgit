@@ -525,6 +525,49 @@ get_gh_activity_year =
 
 
 
+# activity_map ------------------------------------------------------------
+
+activity_map = 
+  function(data) {
+    gh = data[!is.na(country_code) & year(date) <= 2019,
+              lapply(.SD, mean),
+              .SDcols = c('events', 'users'),
+              by = country_code]
+    
+    w = st_as_sf(rworldmap::countriesLow) %>%
+      st_transform("+proj=eqearth +wktext")
+    
+    setDT(w)
+    
+    gh = merge(gh, w[, .(country_code = tolower(ISO_A2), geometry)])
+    
+    sphere = st_graticule(ndiscr = 10000, margin = 10e-6) %>%
+      st_transform(crs = "+proj=eqearth +wktext") %>%
+      st_union() %>%
+      st_convex_hull()
+    
+    gh = st_as_sf(gh)
+    
+    ggplot(gh) +
+      geom_sf(data = sphere, col = NA, fill = 'grey95') + # darker option: #556473 
+      geom_sf(aes(fill = events), col = "white", lwd = 0.3) +
+      # labs(title = "GitHub activity by country") +
+      scale_fill_continuous_sequential(
+        name = 'Average daily events (2015–2019)',
+        palette = "Purple-Blue", 
+        trans = "log", 
+        breaks = scales::log_breaks(n = 5, base = 10),
+        # labels = scales::comma,
+        labels = scales::trans_format('log10', scales::math_format(10^.x)),
+        guide = guide_colourbar(barwidth = 10, title.position = "top")
+      ) +
+      theme_void() +
+      theme(
+        text = element_text(family = "Roboto Condensed"),
+        legend.position = 'bottom'
+      )
+  }
+
 # gender_prep -------------------------------------------------------------
 
 ## Convenience function for dropping unisex cases and then labeling.
