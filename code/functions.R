@@ -557,7 +557,7 @@ ts_plot =
     
     d_wk = melt(d_wk, measure.vars = measure)
     
-    cvals = c(sequential_hcl(7, palette = "Blues 3")[1:5],
+    cvals = c(sequential_hcl(7, palette = "Blues 3")[1:5+(theme=='dark')],
               rev(sequential_hcl(4, palette = "Burg")[2:3]))
     names(cvals) = levels(wd_levels)
     
@@ -636,7 +636,7 @@ gender_prep = function(data) {
   return(d)
 }
 
-# Collapse by wend or whours proportions ----------------------------------
+# Collapse by wend/ohrs proportions ---------------------------------------
 
 collapse_prop =
   function(data, 
@@ -777,7 +777,7 @@ prop_plot =
            ylim = NULL,
            start_week = 2, end_week = 50, 
            treat_date = NULL, treat_date2 = NULL,
-           title = 'auto', caption = 'auto',
+           title = 'auto', facet_title = 'auto', caption = 'auto',
            scales = NULL, ncol = NULL, 
            labeller = 'label_value',
            ...) {
@@ -823,7 +823,7 @@ prop_plot =
     data_nhy_mean[, col_grp := 'Recent mean']
     
     title_auto = title ## for title adjustment along with facet vars below
-    if (title=='auto') {
+    if (is.null(title) || title=='auto') {
       if (prop=='both') {
         title = 'Proportion of activity'
       } else if (prop=='wend') {
@@ -834,8 +834,12 @@ prop_plot =
     }
     if (caption=='auto') {
       if (prop %in% c('both', 'ohrs')) {
+        start_hr = head(work_hours, 1)
+        start_hr = ifelse(start_hr>12, paste(start_hr-12, 'pm'), paste(start_hr, 'am'))
+        end_hr = tail(work_hours, 1)
+        end_hr = ifelse(end_hr>12, paste(end_hr-12, 'pm'), paste(end_hr, 'am'))
         caption = paste0('Note: "Out-of-hours" defined as the period outside ', 
-                         head(work_hours, 1),' am to ', tail(work_hours, 1),' pm.')
+                         start_hr,' to ', end_hr, '.')
       } else {
         caption = NULL
       }
@@ -848,13 +852,21 @@ prop_plot =
     if (by_gender) facet_vars = c(facet_vars, vars(gender))
     
     # Extra title adjustment
-    if (title_auto=='auto' && length(mcols)==1 && prop!='both') {
+    if (is.null(title_auto) || title_auto=='auto' && length(mcols)==1 && prop!='both') {
       noun = ifelse(mcols=='events', 'event activity', 'active users')
       if (prop=='wend') {
         title = paste('Proportion of', noun, 'occurring on weekends')
       } else {
         title = paste('Proportion of', noun, 'occurring out-of-hours')
       }
+    }
+    
+    ylab = 'Proportion'
+    if (is.null(title_auto)) {
+      if (prop=='both') ylab = paste(ylab, 'of activity')
+      if (prop=='wend') ylab = paste(ylab, 'of weekend activity')
+      if (prop=='ohrs') ylab = paste(ylab, 'of out-of-hours activity')
+      title = NULL
     }
     
     # Hack for theme_tufte and expanded y limits
@@ -881,7 +893,7 @@ prop_plot =
           geom_vline(xintercept = treat_date2, col = 'grey50', lty = 2) 
         }
       } +
-      labs(x = 'Week of year', y = 'Proportion', title = title, caption = caption) +
+      labs(x = 'Week of year', y = ylab, title = title, caption = caption) +
       scale_y_percent(limits = ylim) +
       scale_colour_manual(values = col_vals) +
       scale_size_manual(values = lwd_vals) +
@@ -897,6 +909,9 @@ prop_plot =
       } +
       coord_cartesian(clip="off") +
       theme_tufte(base_family = 'Roboto Condensed', base_size = 12) + 
+      {
+        if(is.null(facet_title)) theme(strip.text = element_blank())
+      } +
       theme(legend.position = 'bottom', legend.title = element_blank())
     
   }

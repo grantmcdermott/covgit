@@ -353,6 +353,22 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       plot = prop_global_wend,
       width = 8, height = 5, device = cairo_pdf
       ),
+    ## ** Global (prop = weekends, measure = events) ----
+    prop_global_wend_events = prop_plot(
+      merge(g, lockdown_dates),
+      prop = 'wend', measure = 'events',
+      bad_dates = bad_dates,
+      treat_date2 = 10, ## Global treatment date
+      ylim = c(0.15, 0.25),
+      title = NULL, facet_title = NULL,
+      scales = 'free_y',
+      labeller = labeller(.multi_line=FALSE)
+      ),
+    prop_global_wend_events_ggsave = ggsave(
+      here('figs/prop-global-wend-events.pdf'), 
+      plot = prop_global_wend_events,
+      width = 8, height = 5, device = cairo_pdf
+      ),
 
     ## ** Cities (prop = both, measure = events) ----
     prop_cities_both_events = prop_plot(
@@ -360,6 +376,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       prop = 'both', measure = 'events',
       bad_dates = bad_dates, 
       min_year = 2017, 
+      title = NULL,
       treat_date2 = 10, ## Global treatment date
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
       ),
@@ -376,6 +393,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       bad_dates = bad_dates, min_year = 2017,
       treat_date2 = 10, ## Global treatment date
       by_gender = TRUE, 
+      title = NULL,
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
       ),
     prop_gender_wend_events_ggsave = ggsave(
@@ -391,6 +409,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       bad_dates = bad_dates, min_year = 2017,
       treat_date2 = 10, ## Global treatment date
       by_gender = TRUE, 
+      title = NULL,
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
       ),
     prop_gender_ohrs_events_ggsave = ggsave(
