@@ -883,14 +883,14 @@ prop_plot =
       geom_line(data = data[yr==highlight_year]) +
       {
         if (!is.null(treat_date)) {
-          geom_vline(xintercept = treat_date) 
+          geom_vline(xintercept = treat_date, col = 'grey50', lty = 2) 
         } else {
-          geom_vline(data = treat_dates, aes(xintercept = treat_date), col = 'grey50')
+          geom_vline(data = treat_dates, aes(xintercept = treat_date), col = 'grey50', lty = 2)
         }
       } +
       {
         if (!is.null(treat_date2)) {
-          geom_vline(xintercept = treat_date2, col = 'grey50', lty = 2) 
+          geom_vline(xintercept = treat_date2, col = 'grey50', lty = 1) 
         }
       } +
       labs(x = 'Week of year', y = ylab, title = title, caption = caption) +
