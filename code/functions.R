@@ -61,17 +61,22 @@ bad_dates_func = function(dates) {
 #'    used before applying it.
 #' @param by_country Logical. Should the results be grouped by country? May
 #'    conflict with location-specific arguments below (e.g `city`), so caution
-#'    should be used when combining the two. Defaults to FALSE.
-#' @param city A character string, e.g. 'San Francisco' describing the 
+#'    should be used when combining the two. Defaults to FALSE, unless 
+#'    `country_code` is defined in which case defaults to TRUE. 
+#' @param city A character string, e.g. 'San Francisco' denoting the 
 #'    particular geographic area of interest. Ignore this argument if you'd like
 #'    to query data from the entire globe.
 #' @param city_alias A character string, e.g. 'SF'. Only used if the
 #'   `city` argument is also provided.
-#' @param state A character string, e.g. 'CA' describing the particular 
+#' @param state A character string, e.g. 'CA' denoting the particular 
 #'    geographic area of interest. Ignore this argument if you'd like to query
 #'    data from the entire globe.
 #' @param state_alias A character string, e.g. 'California'. Only used if the
 #'   `state` argument is also provided.
+#' @param country_code A character string denoting an ISO alpha-2 country code
+#'    of interest (e.g. 'US' or 'CN'). See: https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2.
+#'    This argument is generally not needed unless you want to extract 
+#'    information for an entire country as a whole.
 #' @param tz A character string indicating the appropriate timezone for your
 #'    location of interest, e.g. 'America/Los_Angeles'. If none is
 #'    provided then the query defaults to 'UTC'.
@@ -165,6 +170,7 @@ get_gh_activity =
     by_country = NULL,
     city = NULL, city_alias=NULL, 
     state = NULL, state_alias=NULL,
+    country_code=NULL,
     tz = NULL,
     hourly = FALSE,
     event_type = NULL, incl_commits = FALSE,
@@ -246,6 +252,7 @@ get_gh_activity =
     grp_vars = paste0(t_vars, ga_vars)
     
     ## Are we aggregating by country?
+    if (!is.null(country_code)) by_country = TRUE
     if (is.null(by_country)) by_country = FALSE
     if (by_country) {
       grp_vars = paste0('country_code, ', grp_vars)
@@ -313,20 +320,30 @@ get_gh_activity =
           )
       
       ## Users tab WHERE condition
-      if (!location_null) {
+      if (!location_null | !is.null(country_code)) {
         where_string = "WHERE "
         
         ## Location WHERE component
         if (!location_null) {
           
-          location = ifelse(is.null(state), city, ifelse(is.null(city), state, paste0(city, ", ", state))) 
+          # location = ifelse(is.null(state), city, ifelse(is.null(city), state, paste0(city, ", ", state))) 
+          location = 
+            if (!is.null(city) && !is.null(state) ) {
+              paste0(city, ", ", state)
+            } else if (!is.null(city) && is.null(state)) {
+              city
+            } else if (is.null(city) && !is.null(state)) {
+              state
+            } else {
+              ""
+            }
           
           where_string = glue(where_string, " 
                               location = '", location, "'")
           
-          if(!is.null(city)) {
+          if (!is.null(city)) {
             where_string = glue(where_string," OR city = '", city, "'")
-            if(!is.null(city_alias)) {
+            if (!is.null(city_alias)) {
               where_string = glue(where_string," OR city = '", city_alias, "'")
             }
           }
@@ -344,6 +361,10 @@ get_gh_activity =
             }
           }
         message("Identifying GitHub users in ", location, " from ", users_tab, "...\n")
+        } else if (!is.null(country_code)) {
+          country_code = tolower(country_code)
+          where_string = glue(where_string, "country_code = '", country_code, "'")
+          message("Identifying GitHub users in country ", toupper(country_code), " from ", users_tab, "...\n")
         }
         ## End Location WHERE component
 
