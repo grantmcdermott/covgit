@@ -35,6 +35,49 @@ plan =
     ## Write to disk
     write_countries = write_fst(countries, here('data/countries.fst')),
 
+# Highlighted countries ---------------------------------------------------
+
+    ## Loose criteria: 1) Preferably within the top 20 countries by users and 2) 
+    ## single time-zoned. The latter is important (versus the main `countries` 
+    ## dataset), since it allows for fine-grained distinction of wkend and 
+    ## ohours activity. That being said, I'm only going to select a few 
+    ## countries, since I just want to highlight some cases of interest (e.g. 
+    ## different COVID policy responses) and potential heterogeneity. I also
+    ## allow two exceptions --- Brazil (mostly single time-zoned) and South 
+    ## Africa (only 40th by users) --- for extra geographic coverage.
+    
+    countries_hi = rbindlist(Map(
+      function(country_code, country_name, tz, user_rank) {
+        rbindlist(lapply(
+          2019:2020, function(y) {
+            get_gh_activity_year(
+              billing = billing, year = y, 
+              country_code = country_code,
+              tz = tz)
+          }
+        ))[, ':=' (location = country_name, user_rank = user_rank)]
+      },
+      country_code = c('cn', 'de', 'gb', 
+                       'fr', 'in', 'br',
+                       'jp', 'nl', 'se',
+                       'it', 'kr', 'za'),
+      country_name = c('China', 'Germany', 'United Kingdom', 
+                       'France', 'India', 'Brazil',
+                       'Japan', 'Netherlands', 'Sweden',
+                       'Italy', 'South Korea', 'South Africa'),
+      tz           = c('Asia/Shanghai', 'Europe/Berlin', 'Europe/London', 
+                       'Europe/Paris', 'Asia/Kolkata', 'Brazil/East',
+                       'Japan', 'Europe/Amsterdam', 'Europe/Stockholm',
+                       'Europe/Rome', 'Asia/Seoul', 'Africa/Johannesburg'),
+      user_rank    = c(2, 3, 4, 
+                       5, 7, 9,
+                       10, 12, 16,
+                       18, 19, 40)
+    )),
+
+    ## Write to disk
+    write_countries_hi = write_fst(countries_hi, here('data/countries-hi.fst')),
+
 
 # Cities ------------------------------------------------------------------
 
