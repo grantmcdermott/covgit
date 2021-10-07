@@ -77,6 +77,11 @@ bad_dates_func = function(dates) {
 #'    of interest (e.g. 'US' or 'CN'). See: https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2.
 #'    This argument is generally not needed unless you want to extract 
 #'    information for an entire country as a whole.
+#' @param geo_ringer A character string that will act as a catch-all "ringer"
+#'    clause for additional geo-location subsetting. Should be an intelligible
+#'    SQL WHERE argument like "state!='ME'". This can be useful if you want to
+#'    ensure that you exclude places that share the same name as your target
+#'    area of interest, e.g. Portland, OR versus Portland, ME.
 #' @param tz A character string indicating the appropriate timezone for your
 #'    location of interest, e.g. 'America/Los_Angeles'. If none is
 #'    provided then the query defaults to 'UTC'.
@@ -171,6 +176,7 @@ get_gh_activity =
     city = NULL, city_alias=NULL, 
     state = NULL, state_alias=NULL,
     country_code=NULL,
+    geo_ringer=NULL,
     tz = NULL,
     hourly = FALSE,
     event_type = NULL, incl_commits = FALSE,
@@ -344,7 +350,11 @@ get_gh_activity =
           if (!is.null(city)) {
             where_string = glue(where_string," OR city = '", city, "'")
             if (!is.null(city_alias)) {
-              where_string = glue(where_string," OR city = '", city_alias, "'")
+              alias_string = glue(" OR city = '", city_alias, "'")
+              if (!is.null(state)) {
+                alias_string = glue(alias_string, " OR location = '", gsub(city, city_alias, location), "'")
+              } 
+              where_string = glue(where_string, alias_string)
             }
           }
           if (!is.null(state)) {
@@ -352,7 +362,8 @@ get_gh_activity =
             ## will pull in (e.g.) all of CA activity when only desire San 
             ## Francisco, CA. Downside is that you may pull in some spurious cases 
             ## when two places share the same name (e.g. Portland, OR and Portland, 
-            ## ME) but this seems by far the lesser of two evils.
+            ## ME) but this can be filtered with the `geo_ringer` argument 
+            ## below.
             if(is.null(city)) {
               where_string = glue(where_string, " OR state = '", state, "'")
               if(!is.null(state_alias)) {
@@ -365,6 +376,9 @@ get_gh_activity =
           country_code = tolower(country_code)
           where_string = glue(where_string, "country_code = '", country_code, "'")
           message("Identifying GitHub users in country ", toupper(country_code), " from ", users_tab, "...\n")
+        }
+        if (!is.null(geo_ringer)) {
+          where_string = glue(gsub("^WHERE ", "WHERE (",  where_string), ") AND ", geo_ringer)
         }
         ## End Location WHERE component
 
