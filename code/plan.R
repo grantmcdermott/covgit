@@ -378,6 +378,33 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       width = 8, height = 5, device = cairo_pdf
       ),
 
+    # ** Highlighted countries ----
+    ## We'll break this up into two plots to conserve visual space...
+    ts_countries_events_1 = ts_plot(
+      countries_hi[location %in% sort(unique(countries_hi$location))[1:6]], 
+      bad_dates = bad_dates, measure = 'events', 
+      by_location = TRUE, 
+      lockdown_dates = as.IDate(c('2020-02-10', '2020-03-02')),
+      theme = 'void'
+      ),
+    ts_countries_events_1_ggsave = ggsave(
+      here('figs/ts-countries-events-1.pdf'), 
+      plot = ts_countries_events_1,
+      width = 8, height = 10, device = cairo_pdf
+      ),
+    ts_countries_events_2 = ts_plot(
+      countries_hi[location %in% sort(unique(countries_hi$location))[7:12]], 
+      bad_dates = bad_dates, measure = 'events', 
+      by_location = TRUE, 
+      lockdown_dates = as.IDate(c('2020-02-10', '2020-03-02')),
+      theme = 'void'
+      ),
+    ts_countries_events_2_ggsave = ggsave(
+      here('figs/ts-countries-events-2.pdf'), 
+      plot = ts_countries_events_2,
+      width = 8, height = 10, device = cairo_pdf
+      ),
+
 
 # * Proportion figures ----------------------------------------------------
 

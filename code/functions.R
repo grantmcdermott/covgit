@@ -552,11 +552,13 @@ ts_plot =
   function(data, 
            measure = c('events', 'users'),
            bad_dates=bad_dates, 
-           theme = c('light', 'dark')) {
+           by_location = FALSE,
+           lockdown_dates = NULL,
+           theme = c('light', 'dark', 'void')) {
     
     measure = match.arg(measure)
     theme = match.arg(theme)
-    strip_col = ifelse(theme=='light', 'black', 'white')
+    strip_col = ifelse(theme %in% c('light', 'void'), 'black', 'white')
     
     ## bad weeks
     bad_weeks = data.table(date = bad_dates, 
@@ -570,7 +572,7 @@ ts_plot =
     d_wk = data[,
                 lapply(.SD, sum), 
                 .SDcols = measure,
-                by = .(yr = year(date), wk = isoweek(date), 
+                by = .(location, yr = year(date), wk = isoweek(date), 
                        wd = factor(weekdays(date, abbreviate = TRUE),
                                    levels=wd_levels))] 
     
@@ -582,17 +584,39 @@ ts_plot =
               rev(sequential_hcl(4, palette = "Burg")[2:3]))
     names(cvals) = levels(wd_levels)
     
+    if (!is.null(lockdown_dates)) {
+      lockdown_dates = data.table(date = lockdown_dates)[
+        , ':=' (wk = isoweek(date), yr = year(date), lty = 1:.N)]
+    }
+    
     ggplot(d_wk, aes(wk, value/1e6)) +
       geom_line(aes(col=wd) ) +
       labs(x = 'Week of year', y = paste('Daily', measure, '(million)')) +
-      facet_wrap(~yr, nrow = 1) +
+      {
+        if (by_location) {
+          facet_grid(location ~ yr, scales = 'free_y', switch = 'y')
+        } else {
+          facet_wrap(~yr, nrow = 1)
+        }
+      } +
+      {
+        if (!is.null(lockdown_dates)) {
+          list(geom_vline(data = lockdown_dates,
+                     aes(xintercept = wk, linetype = lty),
+                     col = 'grey50'),
+            scale_linetype_identity())
+        }
+      } +
       scale_color_manual(values = cvals) +
       { 
         if (theme=='light') {
           theme_ipsum_rc(plot_margin = margin(5, 5, 5, 5), grid = 'XY', axis_title_just = 'c')
-        } else {
+        } else if (theme=='dark') {
           theme_modern_rc(plot_margin = margin(5, 5, 5, 5), grid = 'XY', axis_title_just = 'c')
-        } 
+        } else {
+          theme_void(base_family = font_rc) +
+            theme(strip.text = element_text(size = 11.5))
+        }
       } +
       theme(
         legend.title = element_blank(),
