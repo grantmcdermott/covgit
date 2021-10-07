@@ -277,30 +277,13 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
     ## Write to disk
     write_sea = write_fst(sea, here('data/sea.fst')),
 
-# ** Seattle (Jan 2019 cohort) --------------------------------------------
-
-    ## Same as the above, but this time limited to the group of users who were 
-    ## active during January 2019. In other words, we follow the exact same 
-    ## users through and try to isolate the intensive margin for this cohort.
-    sea_cohort = rbindlist(lapply(
-      2015:2020, function(y) {
-        get_gh_activity_year(
-          billing = billing, year = y,
-          hourly = TRUE,
-          city = 'Seattle', state = 'WA',
-          tz = 'America/Los_Angeles',
-          users_tab = 'mcd-lab.covgit.sea_users_ght1906_matched_gharch201901'
-        )
-        }
-      ))[, location := paste(location, 'cohort')],
-    
-    ## Write to disk
-    write_sea_cohort = write_fst(sea_cohort, here('data/sea-cohort.fst')),
 
 # ** Seattle (linkedin matched) -------------------------------------------
 
-    ## As above, but this time on a subset of users matched to a LinkedIn profile.
-    ## Allows us to categorise by age and gender.
+    ## Same as the above, but this time limited to the group of users who: 
+    ## (a) were active during January 2019, and (b) were matched against a 
+    ## LinkedIn profile. Allows us to isolate intensive margin, as well as 
+    ## categorise by age and gender.
     sea_linkedin = rbindlist(lapply(
       2015:2020, function(y) {
         get_gh_activity_year(
