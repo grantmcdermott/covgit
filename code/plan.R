@@ -102,11 +102,11 @@ plan =
         get_gh_activity_year(
           billing = billing, year = y, 
           hourly = TRUE,
-          city = 'London', by_country = TRUE,
+          city = 'London', geo_ringer = "country_code!='ca'",
           tz = 'Europe/London'
         )
         }
-      ))[country_code=='gb'],
+      )),
     
     ## Write to disk
     write_lon = write_fst(lon, here('data/lon.fst')),
@@ -267,7 +267,8 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
         get_gh_activity_year(
           billing = billing, year = y,
           hourly = TRUE,
-          city = 'Seattle', state = 'WA',
+          city = 'Seattle', city_alias = 'Redmond',
+          state = 'WA', geo_ringer = "state!='OR'",
           tz = 'America/Los_Angeles'
         )
       }
