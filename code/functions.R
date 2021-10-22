@@ -85,6 +85,15 @@ bad_dates_func = function(dates) {
 #' @param tz A character string indicating the appropriate timezone for your
 #'    location of interest, e.g. 'America/Los_Angeles'. If none is
 #'    provided then the query defaults to 'UTC'.
+#' @param repo_ids Numeric. Optional vector of repo IDs (corresponding to the 
+#'    "repo.id" field in the GHArchive tables) for additional subsetting by 
+#'    certain repos.
+#' @param actor_ids Numeric. Optional vector of actor IDs (corresponding to the 
+#'    "actor.id" field in the GHArchive tables) for additional subsetting by 
+#'    certain actors.
+#' @param org_ids Numeric. Optional vector of repo IDs (corresponding to the 
+#'    "org.id" field in the GHArchive tables) for additional subsetting by 
+#'    certain organizations.
 #' @param hourly Logical. Should the data be aggregated at the daily (default)
 #'    or hourly level? Default is FALSE.
 #' @param event_type Character vector. Which event types should be aggregated?
