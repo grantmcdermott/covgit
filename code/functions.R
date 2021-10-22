@@ -178,6 +178,9 @@ get_gh_activity =
     country_code=NULL,
     geo_ringer=NULL,
     tz = NULL,
+    repo_ids = NULL,
+    actor_ids = NULL,
+    org_ids = NULL,
     hourly = FALSE,
     event_type = NULL, incl_commits = FALSE,
     users_tab = NULL,
@@ -272,6 +275,8 @@ get_gh_activity =
       grp_vars_final = paste0('actor_login, ', grp_vars)
     }
     
+    ## Event data query from GH Archive
+    
     events_query =
       glue::glue_sql(
         "
@@ -284,19 +289,41 @@ get_gh_activity =
         .con = gharchive_con
       )
 
+    ## Are we limiting to specific repos, actors, or orgs?
+    ## Add in combined WHERE clauses if so...
+    if (!is.null(repo_ids)) {
+      events_query = 
+        glue::glue_sql(
+          events_query, " AND repo.id IN ({vals*})",
+          vals = repo_ids,
+          .con = gharchive_con)
+    }
+    
+    if (!is.null(actor_ids)) {
+      events_query = 
+        glue::glue_sql(
+          events_query, " AND actor.id IN ({vals*})",
+          vals = actor_ids,
+          .con = gharchive_con)
+    }
+    
+    if (!is.null(org_ids)) {
+      events_query = 
+        glue::glue_sql(
+          events_query, " AND org.id IN ({vals*})",
+          vals = org_ids,
+          .con = gharchive_con)
+    }
     
     ## Which event types are we tracking? Default is all...
     if (!is.null(event_type)) {
-      
       event_type = paste0(stringr::str_to_title(event_type), 'Event')
-      
       ## Add in combined WHERE clause
       events_query = 
         glue::glue_sql(
           events_query, " AND type IN ({vals*})",
           vals = event_type,
           .con = gharchive_con)
-      
     }
     ## Similarly, are we including commit "events" (expensive!). From a 
     ## query-construction perspective, only matters for right at the end of the 
