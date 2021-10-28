@@ -745,7 +745,8 @@ collapse_prop =
            bad_dates=NULL, start_week = 2, end_week = 50,
            ...) {
     
-    d = copy(data)[, date := as.IDate(date)][date %ni% bad_dates]
+    d = copy(data)[, date := as.IDate(date)]
+    if (!is.null(bad_dates)) d = d[date %ni% bad_dates]
     
     prop = match.arg(prop)
     if (prop=='both') prop = c('wend', 'ohrs')
