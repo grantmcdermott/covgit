@@ -470,7 +470,57 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       here('figs/prop-gender-ohrs-events.pdf'), 
       plot = prop_gender_ohrs_events,
       width = 8, height = 10, device = cairo_pdf
-      )
+      ),
+
+
+# Event-study regressions -------------------------------------------------
+
+# * Gender ----------------------------------------------------------------
+
+    gender_prop = collapse_prop(
+      merge(gender, lockdown_dates),
+      # prop = 'ohrs',
+      measure = 'both',
+      bad_dates = bad_dates, 
+      min_year = 2017,
+      by_gender = TRUE,
+      treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
+      )[, lockdown_global := 10 ## We'll actually use the 'Global' week 10 date as the common lockdown treatment
+        ][, ':=' (time_to_treatment = wk - lockdown, 
+                  time_to_treatment_global = wk - lockdown_global)][],
+    ## ** ES female ----
+    es_female = feols(
+        events ~ i(time_to_treatment_global, treated, -1) | location + yr + time_to_treatment_global, 
+        gender_prop[gender=='Female'],
+        vcov = ~location^yr,
+        split = ~prop
+        ),
+    ## ** ES male ----
+    es_male = feols(
+        events ~ i(time_to_treatment_global, treated, -1) | location + yr + time_to_treatment_global, 
+        gender_prop[gender=='Male'],
+        vcov = ~location^yr,
+        split = ~prop
+        ),
+    ## ** Combined plot ----
+    es_gender_plot = ggiplot(
+      list('Male' = es_male, 'Female' = es_female), 
+      geom_style = 'ribbon',
+      multi_style = "facet",
+      xlab = 'Weeks until lockdown', 
+      ylab = 'Effect on proportion of event activity',
+      facet_args = list(labeller = labeller(.multi_line=FALSE)),
+      theme = theme_es
+      ) +
+  scale_color_discrete_qualitative(palette = "Harmonic", aesthetics = c('colour', 'fill')) +
+  labs(caption = 'Note: "Out-of-hours" defined as the period outside of 9 am to 6 pm.'),
+    es_gender_plot_save = ggsave(
+      here('figs/es-gender-events.pdf'), 
+      plot = es_gender_plot,
+      width = 8, height = 5, device = cairo_pdf
+    )
+
+    
+
 
   )
-

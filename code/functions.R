@@ -25,6 +25,18 @@ completeDT <- function(DT, cols, defs = NULL) {
 } 
 
 
+# Event-study plot theme --------------------------------------------------
+
+theme_es = 
+  theme_classic() + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        legend.position = "none", 
+        plot.title = element_blank(),
+        text = element_text(family = hrbrthemes::font_rc),
+        strip.background = element_rect(colour = "white", fill = "white"),
+        strip.text = element_text(colour = "black", size = 11))
+
+
 # Bad dates ---------------------------------------------------------------
 
 ## Simple function for adding a buffer around 'bad' dates, e.g. where GitHub
