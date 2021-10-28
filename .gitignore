@@ -5,5 +5,7 @@
 .Ruserdata
 .drake
 TESTING/
+TESTING_OTHER/
 OLD/
+lit/
 .Renviron
