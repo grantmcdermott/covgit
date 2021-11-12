@@ -49,10 +49,11 @@ plan =
     countries_hi = rbindlist(Map(
       function(country_code, country_name, tz, user_rank) {
         rbindlist(lapply(
-          2019:2020, function(y) {
+          2018:2020, function(y) {
             get_gh_activity_year(
               billing = billing, year = y, 
               country_code = country_code,
+              geo_ringer = "EXTRACT(YEAR from DATETIME(created_at)) <= 2017",
               tz = tz)
           }
         ))[, ':=' (location = country_name, user_rank = user_rank)]
