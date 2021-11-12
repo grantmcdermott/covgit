@@ -7,6 +7,7 @@ plan =
                                  '2016-02-01',
                                  '2016-05-01',
                                  '2018-04-03', 
+                                 '2019-09-12',
                                  '2020-08-21')),
     
     lockdown_dates = fread(here('data/lockdown-dates.csv'))[, .SD[1], by = location],
@@ -515,7 +516,7 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
       ) +
   scale_color_discrete_qualitative(palette = "Harmonic", aesthetics = c('colour', 'fill')) +
   labs(caption = 'Note: "Out-of-hours" defined as the period outside of 9 am to 6 pm.'),
-    es_gender_plot_save = ggsave(
+  es_gender_plot_save = ggsave(
       here('figs/es-gender-events.pdf'), 
       plot = es_gender_plot,
       width = 8, height = 5, device = cairo_pdf
