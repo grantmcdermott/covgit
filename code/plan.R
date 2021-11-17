@@ -38,14 +38,15 @@ plan =
 
 # Highlighted countries ---------------------------------------------------
 
-    ## Loose criteria: 1) Preferably within the top 20 countries by users and 2) 
+    ## Loose criteria: Preferably 1) within the top 20 countries by users and 2) 
     ## single time-zoned. The latter is important (versus the main `countries` 
     ## dataset), since it allows for fine-grained distinction of wkend and 
     ## ohours activity. That being said, I'm only going to select a few 
     ## countries, since I just want to highlight some cases of interest (e.g. 
     ## different COVID policy responses) and potential heterogeneity. I also
-    ## allow two exceptions --- Brazil (mostly single time-zoned) and South 
-    ## Africa (only 40th by users) --- for extra geographic coverage.
+    ## allow three exceptions --- US (b/c it has the most users), Brazil (mostly 
+    ## single time-zoned), and South Africa (only 40th by users) --- for extra 
+    ## geographic coverage.
     
     countries_hi = rbindlist(Map(
       function(country_code, country_name, tz, user_rank) {
@@ -59,21 +60,21 @@ plan =
           }
         ))[, ':=' (location = country_name, user_rank = user_rank)]
       },
-      country_code = c('cn', 'de', 'gb', 
-                       'fr', 'in', 'br',
-                       'jp', 'nl', 'se',
+      country_code = c('us', 'cn', 'de', 
+                       'gb', 'fr', 'in', 
+                       'br', 'jp', 'se',
                        'it', 'kr', 'za'),
-      country_name = c('China', 'Germany', 'United Kingdom', 
-                       'France', 'India', 'Brazil',
-                       'Japan', 'Netherlands', 'Sweden',
+      country_name = c('United States', 'China', 'Germany', 
+                       'United Kingdom', 'France', 'India', 
+                       'Brazil', 'Japan', 'Sweden',
                        'Italy', 'South Korea', 'South Africa'),
-      tz           = c('Asia/Shanghai', 'Europe/Berlin', 'Europe/London', 
-                       'Europe/Paris', 'Asia/Kolkata', 'Brazil/East',
-                       'Japan', 'Europe/Amsterdam', 'Europe/Stockholm',
+      tz           = c('US/Central', 'Asia/Shanghai', 'Europe/Berlin',
+                       'Europe/London', 'Europe/Paris', 'Asia/Kolkata', 
+                       'Brazil/East', 'Japan', 'Europe/Stockholm',
                        'Europe/Rome', 'Asia/Seoul', 'Africa/Johannesburg'),
-      user_rank    = c(2, 3, 4, 
-                       5, 7, 9,
-                       10, 12, 16,
+      user_rank    = c(1, 2, 3, 
+                       4, 5, 7, 
+                       9, 10, 16,
                        18, 19, 40)
     )),
 
