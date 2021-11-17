@@ -1,0 +1,41 @@
+date,dofw,name,type
+2015-01-01,Thursday,New Year's Day,Bank holiday
+2015-04-03,Friday,Good Friday,Bank holiday
+2015-05-04,Monday,Early May Bank Holiday,Bank holiday
+2015-05-25,Monday,Spring Bank Holiday,Bank holiday
+2015-12-25,Friday,Christmas Day,Bank holiday
+2015-12-26,Saturday,Boxing Day,Bank holiday
+2015-12-28,Monday,Substitute Bank Holiday for Boxing Day,Bank holiday
+2016-01-01,Friday,New Year's Day,Bank holiday
+2016-03-25,Friday,Good Friday,Bank holiday
+2016-05-02,Monday,Early May Bank Holiday,Bank holiday
+2016-05-30,Monday,Spring Bank Holiday,Bank holiday
+2016-12-25,Sunday,Christmas Day,Bank holiday
+2016-12-26,Monday,Boxing Day,Bank holiday
+2016-12-27,Tuesday,Substitute Bank Holiday for Christmas Day,Bank holiday
+2017-01-01,Sunday,New Year's Day,Bank holiday
+2017-01-02,Monday,New Year's Day observed,Bank holiday
+2017-04-14,Friday,Good Friday,Bank holiday
+2017-05-01,Monday,Early May Bank Holiday,Bank holiday
+2017-05-29,Monday,Spring Bank Holiday,Bank holiday
+2017-12-25,Monday,Christmas Day,Bank holiday
+2017-12-26,Tuesday,Boxing Day,Bank holiday
+2018-01-01,Monday,New Year's Day,Bank holiday
+2018-03-30,Friday,Good Friday,Bank holiday
+2018-05-07,Monday,Early May Bank Holiday,Bank holiday
+2018-05-28,Monday,Spring Bank Holiday,Bank holiday
+2018-12-25,Tuesday,Christmas Day,Bank holiday
+2018-12-26,Wednesday,Boxing Day,Bank holiday
+2019-01-01,Tuesday,New Year's Day,Bank holiday
+2019-04-19,Friday,Good Friday,Bank holiday
+2019-05-06,Monday,Early May Bank Holiday,Bank holiday
+2019-05-27,Monday,Spring Bank Holiday,Bank holiday
+2019-12-25,Wednesday,Christmas Day,Bank holiday
+2019-12-26,Thursday,Boxing Day,Bank holiday
+2020-01-01,Wednesday,New Year's Day,Bank holiday
+2020-04-10,Friday,Good Friday,Bank holiday
+2020-05-08,Friday,Early May Bank Holiday / VE Day,Bank holiday
+2020-05-25,Monday,Spring Bank Holiday,Bank holiday
+2020-12-25,Friday,Christmas Day,Bank holiday
+2020-12-26,Saturday,Boxing Day,Bank holiday
+2020-12-28,Monday,Substitute Bank Holiday for Boxing Day,Bank holiday

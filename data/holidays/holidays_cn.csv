@@ -1,0 +1,132 @@
+date,dofw,name,type
+2015-01-01,Thursday,New Year's Day,National holiday
+2015-01-02,Friday,New Year's Holiday,National holiday
+2015-01-03,Saturday,New Year's Holiday,National holiday
+2015-02-18,Wednesday,Spring Festival Eve,National holiday
+2015-02-19,Thursday,Chinese New Year,National holiday
+2015-02-20,Friday,Spring Festival Golden Week holiday,National holiday
+2015-02-21,Saturday,Spring Festival Golden Week holiday,National holiday
+2015-02-22,Sunday,Spring Festival Golden Week holiday,National holiday
+2015-02-23,Monday,Spring Festival Golden Week holiday,National holiday
+2015-02-24,Tuesday,Spring Festival Golden Week holiday,National holiday
+2015-04-04,Saturday,Qing Ming Jie holiday,National holiday
+2015-04-05,Sunday,Qing Ming Jie,National holiday
+2015-04-06,Monday,Qing Ming Jie holiday,National holiday
+2015-05-01,Friday,Labour Day,National holiday
+2015-05-02,Saturday,Labour Day Holiday,National holiday
+2015-05-03,Sunday,Labour Day Holiday,National holiday
+2015-06-20,Saturday,Dragon Boat Festival,National holiday
+2015-06-21,Sunday,Dragon Boat Festival holiday,National holiday
+2015-06-22,Monday,Dragon Boat Festival holiday,National holiday
+2015-09-03,Thursday,Victory Day,National holiday
+2015-09-27,Sunday,Mid-Autumn Festival,National holiday
+2015-10-01,Thursday,National Day,National holiday
+2015-10-02,Friday,National Day Golden Week holiday,National holiday
+2015-10-03,Saturday,National Day Golden Week holiday,National holiday
+2015-10-04,Sunday,National Day Golden Week holiday,National holiday
+2015-10-05,Monday,National Day Golden Week holiday,National holiday
+2015-10-06,Tuesday,National Day Golden Week holiday,National holiday
+2015-10-07,Wednesday,National Day Golden Week holiday,National holiday
+2016-01-01,Friday,New Year's Day,National holiday
+2016-02-07,Sunday,Spring Festival Eve,National holiday
+2016-02-08,Monday,Chinese New Year,National holiday
+2016-02-09,Tuesday,Spring Festival Golden Week holiday,National holiday
+2016-02-12,Friday,Spring Festival Golden Week holiday,National holiday
+2016-02-13,Saturday,Spring Festival Golden Week holiday,National holiday
+2016-04-03,Sunday,Qing Ming Jie holiday,National holiday
+2016-04-04,Monday,Qing Ming Jie,National holiday
+2016-04-30,Saturday,Labour Day Holiday,National holiday
+2016-05-01,Sunday,Labour Day,National holiday
+2016-05-02,Monday,Labour Day Holiday,National holiday
+2016-06-09,Thursday,Dragon Boat Festival,National holiday
+2016-06-10,Friday,Dragon Boat Festival holiday,National holiday
+2016-06-11,Saturday,Dragon Boat Festival holiday,National holiday
+2016-09-15,Thursday,Mid-Autumn Festival,National holiday
+2016-09-16,Friday,Mid-Autumn Festival holiday,National holiday
+2016-09-17,Saturday,Mid-Autumn Festival holiday,National holiday
+2016-10-01,Saturday,National Day,National holiday
+2016-10-02,Sunday,National Day Golden Week holiday,National holiday
+2016-10-03,Monday,National Day Golden Week holiday,National holiday
+2017-01-01,Sunday,New Year's Day,National holiday
+2017-01-27,Friday,Spring Festival Eve,National holiday
+2017-01-28,Saturday,Chinese New Year,National holiday
+2017-01-29,Sunday,Spring Festival Golden Week holiday,National holiday
+2017-04-02,Sunday,Qing Ming Jie holiday,National holiday
+2017-04-03,Monday,Qing Ming Jie holiday,National holiday
+2017-04-04,Tuesday,Qing Ming Jie,National holiday
+2017-04-29,Saturday,Labour Day Holiday,National holiday
+2017-04-30,Sunday,Labour Day Holiday,National holiday
+2017-05-01,Monday,Labour Day,National holiday
+2017-05-28,Sunday,Dragon Boat Festival holiday,National holiday
+2017-05-29,Monday,Dragon Boat Festival holiday,National holiday
+2017-05-30,Tuesday,Dragon Boat Festival,National holiday
+2017-10-01,Sunday,National Day,National holiday
+2017-10-02,Monday,National Day Golden Week holiday,National holiday
+2017-10-03,Tuesday,National Day Golden Week holiday,National holiday
+2017-10-04,Wednesday,Mid-Autumn Festival,National holiday
+2017-10-08,Sunday,National Day Golden Week holiday,National holiday
+2018-01-01,Monday,New Year's Day,National holiday
+2018-02-15,Thursday,Spring Festival Eve,National holiday
+2018-02-16,Friday,Chinese New Year,National holiday
+2018-02-17,Saturday,Spring Festival Golden Week holiday,National holiday
+2018-04-05,Thursday,Qing Ming Jie,National holiday
+2018-05-01,Tuesday,Labour Day,National holiday
+2018-06-18,Monday,Dragon Boat Festival,National holiday
+2018-09-24,Monday,Mid-Autumn Festival,National holiday
+2018-10-01,Monday,National Day,National holiday
+2018-10-02,Tuesday,National Day Golden Week holiday,National holiday
+2018-10-03,Wednesday,National Day Golden Week holiday,National holiday
+2019-01-01,Tuesday,New Year's Day,National holiday
+2019-02-04,Monday,Spring Festival Eve,National holiday
+2019-02-05,Tuesday,Chinese New Year,National holiday
+2019-02-06,Wednesday,Spring Festival Golden Week holiday,National holiday
+2019-02-07,Thursday,Spring Festival Golden Week holiday,National holiday
+2019-02-08,Friday,Spring Festival Golden Week holiday,National holiday
+2019-02-09,Saturday,Spring Festival Golden Week holiday,National holiday
+2019-02-10,Sunday,Spring Festival Golden Week holiday,National holiday
+2019-04-05,Friday,Qing Ming Jie,National holiday
+2019-04-06,Saturday,Qing Ming Jie holiday,National holiday
+2019-04-07,Sunday,Qing Ming Jie holiday,National holiday
+2019-05-01,Wednesday,Labour Day,National holiday
+2019-05-02,Thursday,Labour Day Holiday,National holiday
+2019-05-03,Friday,Labour Day Holiday,National holiday
+2019-06-07,Friday,Dragon Boat Festival,National holiday
+2019-09-13,Friday,Mid-Autumn Festival,National holiday
+2019-10-01,Tuesday,National Day,National holiday
+2019-10-02,Wednesday,National Day Golden Week holiday,National holiday
+2019-10-03,Thursday,National Day Golden Week holiday,National holiday
+2019-10-04,Friday,National Day Golden Week holiday,National holiday
+2019-10-05,Saturday,National Day Golden Week holiday,National holiday
+2019-10-06,Sunday,National Day Golden Week holiday,National holiday
+2019-10-07,Monday,National Day Golden Week holiday,National holiday
+2020-01-01,Wednesday,New Year's Day,National holiday
+2020-01-24,Friday,Spring Festival Eve,National holiday
+2020-01-25,Saturday,Chinese New Year,National holiday
+2020-01-26,Sunday,Spring Festival Golden Week holiday,National holiday
+2020-01-27,Monday,Spring Festival Golden Week holiday,National holiday
+2020-01-28,Tuesday,Spring Festival Golden Week holiday,National holiday
+2020-01-29,Wednesday,Spring Festival Golden Week holiday,National holiday
+2020-01-30,Thursday,Spring Festival Golden Week holiday,National holiday
+2020-01-31,Friday,Spring Festival Golden Week Extended Holiday,National holiday
+2020-02-01,Saturday,Spring Festival Golden Week Extended Holiday,National holiday
+2020-02-02,Sunday,Spring Festival Golden Week Extended Holiday,National holiday
+2020-04-04,Saturday,Qing Ming Jie,National holiday
+2020-04-05,Sunday,Qing Ming Jie holiday,National holiday
+2020-04-06,Monday,Qing Ming Jie holiday,National holiday
+2020-05-01,Friday,Labour Day,National holiday
+2020-05-02,Saturday,Labour Day Holiday,National holiday
+2020-05-03,Sunday,Labour Day Holiday,National holiday
+2020-05-04,Monday,Labour Day Holiday,National holiday
+2020-05-05,Tuesday,Labour Day Holiday,National holiday
+2020-06-25,Thursday,Dragon Boat Festival,National holiday
+2020-06-26,Friday,Dragon Boat Festival holiday,National holiday
+2020-06-27,Saturday,Dragon Boat Festival holiday,National holiday
+2020-10-01,Thursday,National Day,National holiday
+2020-10-01,Thursday,Mid-Autumn Festival,National holiday
+2020-10-02,Friday,National Day Golden Week holiday,National holiday
+2020-10-03,Saturday,National Day Golden Week holiday,National holiday
+2020-10-04,Sunday,National Day Golden Week holiday,National holiday
+2020-10-05,Monday,National Day Golden Week holiday,National holiday
+2020-10-06,Tuesday,National Day Golden Week holiday,National holiday
+2020-10-07,Wednesday,National Day Golden Week holiday,National holiday
+2020-10-08,Thursday,National Day Golden Week holiday,National holiday
