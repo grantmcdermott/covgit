@@ -1039,6 +1039,7 @@ prophet_fc =
            holidays,
            ycol = c('events', 'users'),
            train_cutoff = '2019-12-31',
+           outliers = NULL,
            level = 0.8) {
     
     ycol = match.arg(ycol)
@@ -1047,6 +1048,9 @@ prophet_fc =
     if ('ds' %ni% names(data)) setnames(data, 'date', 'ds')
     
     pred_dt = data[, .(ds, y, country_code, location)]
+    if (!is.null(outliers)) {
+      pred_dt[ds==as.IDate(outliers), y := NA]
+    }
     cc = first(data$country_code)
     holidays = holidays[country_code==cc, .(ds, holiday, lower_window, upper_window)]        
     
@@ -1072,5 +1076,12 @@ prophet_fc =
     setnames(pred_dt, 'y', ycol)
     
     return(pred_dt)
+  }
+
+
+# Prophet plot ------------------------------------------------------------
+
+prophet_plot =
+  function() {
     
   }
