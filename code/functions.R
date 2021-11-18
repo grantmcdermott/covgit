@@ -1049,7 +1049,7 @@ prophet_fc =
     
     pred_dt = data[, .(ds, y, country_code, location)]
     if (!is.null(outliers)) {
-      pred_dt[ds==as.IDate(outliers), y := NA]
+      pred_dt[ds %in% as.IDate(outliers), y := NA]
     }
     cc = first(data$country_code)
     holidays = holidays[country_code==cc, .(ds, holiday, lower_window, upper_window)]        
@@ -1082,6 +1082,68 @@ prophet_fc =
 # Prophet plot ------------------------------------------------------------
 
 prophet_plot =
-  function() {
+  function(data, 
+           type = c("diff", "raw"),
+           y = c('events', 'users'),
+           forecast = NULL, forecast_labs_shift = 10,
+           vlines = NULL
+  ) {
     
+    dat = copy(data)
+    type = match.arg(type)
+    if (type=='raw') {
+      y = match.arg(y)
+      if (y %ni% names(dat)) stop('Column `', y, '` not found in the provided data. ')
+      dat = setnames(dat, y, 'yraw')
+      dat[is.na(yraw), c('pred', 'lwr', 'upr') := NA]
+      ylab = paste("GitHub", gsub("s$", "", y), "activity ('000)")
+    } else {
+      ylab = paste("Observed less predicted GitHub", gsub("s$", "", y), "activity ('000)")
+    }
+    
+    gg = ggplot(dat, aes(x= ds))
+    
+    if (type=='diff') {
+      gg = gg +
+        geom_line(aes(y = pred_dev), col = '#7DB0DD') +
+        geom_ribbon(aes(ymin = lwr_dev, ymax = upr_dev), alpha = 0.3, fill = '#7DB0DD') +
+        geom_hline(yintercept = 0) 
+    } else {
+      gg = gg +
+        geom_line(aes(y = yraw, col = 'Observed')) +
+        geom_line(aes(y = pred, col = 'Predicted')) +
+        geom_ribbon(
+          aes(ymin=lwr, ymax = upr, fill = 'Predicted'), 
+          alpha = 0.3, show.legend = FALSE
+        ) +
+        scale_colour_manual(
+          values = c('Observed' = 'black', 'Predicted' = '#7DB0DD'),
+          aesthetics = c('colour', 'fill')
+        )
+    }
+    
+    if (!is.null(forecast)) {
+      gg = gg +
+        geom_vline(xintercept = as.IDate(forecast), lty = 1, col = 'grey50') +
+        annotate(
+          "text", x = as.IDate(forecast)-forecast_labs_shift, y = Inf, 
+          hjust=1,vjust=1, label = "Training\n⟵", size = 3, col = 'grey50'
+        ) +
+        annotate(
+          "text", x = as.IDate(forecast)+forecast_labs_shift, y = Inf, 
+          hjust=0,vjust=1, label = "Forecast\n⟶", size = 3, col = 'grey50'
+        )
+    }
+    
+    gg + 
+      facet_wrap(~location, scales = 'free_y') + 
+      geom_vline(xintercept = as.IDate(vlines), lty = 2, col = 'grey50') +
+      scale_x_date(date_labels = "%b '%y") +
+      scale_y_continuous(labels = function(x) x/1e3) +
+      labs(x = 'Date', y = ylab) +
+      theme(
+        legend.position = 'bottom', legend.title = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.text.x = element_text(hjust = 0.5)
+      ) 
   }

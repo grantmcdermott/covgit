@@ -561,9 +561,50 @@ hols =
 
 prophet_co = rbindlist(lapply(
   split(countries_hi, countries_hi$country_code), 
-  function(x) prophet_fc(x, holidays = hols, outliers = '2020-06-10', level = 0.9)
+  function(x) prophet_fc(x, holidays = hols, level = 0.9, 
+                         outliers = c('2020-06-10', '2019-09-12'))
   )),
-write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst'))
+write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst')),
+
+## *** Plots ----
+
+## Difference trends (default)
+prophet_co_plot = prophet_plot(
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01'
+  ),
+prophet_co_plot_ggsave = ggsave(
+  here('figs/prophet-countries.pdf'), 
+  plot = prophet_co_plot,
+  width = 16, height = 9, device = cairo_pdf
+  ),
+prophet_co_plot_placebo = prophet_plot(
+  prophet_co[ds>='2018-09-01' & ds<='2019-06-30']#, forecast = '2020-01-01'
+  ),
+prophet_co_plot_placebo_ggsave = ggsave(
+  here('figs/prophet-countries-placebo.pdf'), 
+  plot = prophet_co_plot_placebo,
+  width = 16, height = 9, device = cairo_pdf
+  ),
+## Raw trends
+prophet_co_plot_raw = prophet_plot(
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01',
+  type = 'raw'
+  ),
+prophet_co_plot_raw_ggsave = ggsave(
+  here('figs/prophet-countries-raw.pdf'), 
+  plot = prophet_co_plot_raw,
+  width = 16, height = 9, device = cairo_pdf
+  ),
+prophet_co_plot_raw_placebo = prophet_plot(
+  prophet_co[ds>='2018-09-01' & ds<='2019-06-30'], #forecast = '2020-01-01'
+  type = 'raw'
+  ),
+prophet_co_plot_raw_placebo_ggsave = ggsave(
+  here('figs/prophet-countries-raw-placebo.pdf'), 
+  plot = prophet_co_plot_raw_placebo,
+  width = 16, height = 9, device = cairo_pdf
+  )
+
 
 
 )
