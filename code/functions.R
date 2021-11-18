@@ -37,18 +37,18 @@ theme_es =
         strip.text = element_text(colour = "black", size = 11))
 
 
-# Bad dates ---------------------------------------------------------------
+# Buffer dates ------------------------------------------------------------
 
-## Simple function for adding a buffer around 'bad' dates, e.g. where GitHub
-## was down
-bad_dates_func = function(dates) {
-  bad_dates = as.IDate(dates) 
-  bad_dates = sort(bad_dates + rep(0:length(bad_dates), length(bad_dates)))
-  return(bad_dates)
+
+## Simple function for adding a buffer around dates, e.g. where GitHub was down
+buffer_dates = function(dates, window = -1:1) {
+  dates = as.IDate(dates) 
+  bdates = sort(as.IDate(sapply(dates, `+`, window)))
+  return(bdates)
 }
 
 
-# get_gh_activity -----------------------------------------------------------
+# get_gh_activity --------------------------------------------------------
 
 #' Get counts of daily GitHub push (and commit) activity using Google BigQuery.
 #'
@@ -613,7 +613,8 @@ get_gh_activity_year =
 ts_plot = 
   function(data, 
            measure = c('events', 'users'),
-           bad_dates=bad_dates, 
+           bad_dates = bad_dates, 
+           buffer_bad_dates = TRUE,
            by_location = FALSE,
            lockdown_dates = NULL,
            theme = c('light', 'dark', 'void')) {
@@ -621,6 +622,8 @@ ts_plot =
     measure = match.arg(measure)
     theme = match.arg(theme)
     strip_col = ifelse(theme %in% c('light', 'void'), 'black', 'white')
+    
+    if (buffer_bad_dates) bad_dates = buffer_dates(bad_dates)
     
     ## bad weeks
     bad_weeks = data.table(date = bad_dates, 
@@ -754,11 +757,15 @@ collapse_prop =
            simp_loc = TRUE,
            treatment_window = NULL,
            min_year = NULL,
-           bad_dates=NULL, start_week = 2, end_week = 50,
+           bad_dates = NULL, buffer_bad_dates = TRUE,
+           start_week = 2, end_week = 50,
            ...) {
     
     d = copy(data)[, date := as.IDate(date)]
-    if (!is.null(bad_dates)) d = d[date %ni% bad_dates]
+    if (!is.null(bad_dates)) {
+      if (buffer_bad_dates) bad_dates = buffer_dates(bad_dates)
+      d = d[date %ni% bad_dates]
+      }
     
     prop = match.arg(prop)
     if (prop=='both') prop = c('wend', 'ohrs')
@@ -1032,7 +1039,7 @@ prophet_fc =
            holidays,
            ycol = c('events', 'users'),
            train_cutoff = '2019-12-31',
-           interval = 0.8) {
+           level = 0.8) {
     
     ycol = match.arg(ycol)
     
@@ -1049,7 +1056,7 @@ prophet_fc =
         holidays = holidays,
         yearly.seasonality = TRUE,
         daily.seasonality = FALSE,
-        interval.width = interval
+        interval.width = level
       )
     
     fc = predict(mod, pred_dt, holidays = holidays)
@@ -1059,7 +1066,7 @@ prophet_fc =
     pred_dt$upr  = fc$yhat_upper
     
     pred_cols = c('pred', 'lwr', 'upr')
-    pred_dt[, paste0(pred_cols, '_dev') := lapply(.SD, \(x) y - x), .SDcols = pred_cols][]
+    pred_dt[, paste0(pred_cols, '_dev') := lapply(.SD, function(x) y - x), .SDcols = pred_cols][]
     
     # Change the ycol name back
     setnames(pred_dt, 'y', ycol)

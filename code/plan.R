@@ -1,14 +1,15 @@
 plan =
   drake_plan(
 
-# Helper datasets ---------------------------------------------------------
+# Helper datasets and variables -------------------------------------------
 
-bad_dates = bad_dates_func(c('2015-02-01', 
-                             '2016-02-01',
-                             '2016-05-01',
-                             '2018-04-03', 
-                             '2019-09-12',
-                             '2020-08-21')),
+bad_dates = as.IDate(c('2015-02-01', 
+                       '2016-02-01',
+                       '2016-05-01',
+                       '2018-04-03', 
+                       '2019-09-12',
+                       '2020-06-10',
+                       '2020-08-21')),
 
 lockdown_dates = fread(here('data/lockdown-dates.csv'))[, .SD[1], by = location],
 
@@ -484,7 +485,7 @@ gender_prop = collapse_prop(
   merge(gender, lockdown_dates),
   # prop = 'ohrs',
   measure = 'both',
-  bad_dates = bad_dates, 
+  # bad_dates = bad_dates, 
   min_year = 2017,
   by_gender = TRUE,
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
@@ -531,7 +532,7 @@ es_gender_plot_save = ggsave(
 ## Note: Prophet requires specifying holiday-weekend interactions manually
 ## https://github.com/facebook/prophet/issues/1157#issuecomment-539229937
 
-bad_dates_hols = CJ(ds = c(bad_dates, as.IDate('2020-06-10')), 
+bad_dates_hols = CJ(ds = bad_dates, 
                     country_code = unique(countries_hi$country_code)),
 
 hols = 
@@ -551,7 +552,15 @@ hols =
             ][month(ds)==12 & mday(ds)==26, upper_window := 1
               ][month(ds)==1 & mday(ds)==1 & country_code!='cn', lower_window := -1
                 ][month(ds)==10 & mday(ds)==2 & country_code=='in', lower_window := -1] |>
-  setorder(country_code, ds)
+  setorder(country_code, ds),
+
+## ** Highlighted countries ----
+
+prophet_co = rbindlist(lapply(
+  split(countries_hi, countries_hi$country_code), 
+  function(x) prophet_fc(x, holidays = hols, level = 0.9)
+  )),
+write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst'))
 
 
 )
