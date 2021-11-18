@@ -521,6 +521,37 @@ es_gender_plot_save = ggsave(
   here('figs/es-gender-events.pdf'), 
   plot = es_gender_plot,
   width = 8, height = 5, device = cairo_pdf
-  )
+  ),
+
+
+# Prophet -----------------------------------------------------------------
+
+## ** Holidays ----
+
+## Note: Prophet requires specifying holiday-weekend interactions manually
+## https://github.com/facebook/prophet/issues/1157#issuecomment-539229937
+
+bad_dates_hols = CJ(ds = c(bad_dates, as.IDate('2020-06-10')), 
+                    country_code = unique(countries_hi$country_code)),
+
+hols = 
+  rbind(
+    rbindlist(lapply(
+      list.files(here('data/holidays'), full.names = TRUE),
+      \(f) fread(f)[year(date)>=2018, first(.SD), by = .(ds = date)
+                    ][, country_code := gsub("\\.csv$", "", gsub(".*holidays_", "", f))
+                      ][, .(ds, country_code)]
+      )),
+    bad_dates_hols
+  )[, holiday := ifelse(wday(ds) %in% c(1,7), 'Holiday (weekend)', 'Holiday')
+    ][, .(ds, country_code, holiday)
+      ][, c('lower_window', 'upper_window') := 0
+        ][month(ds)==12 & mday(ds)==25 & country_code %in% c('us', 'fr'), upper_window := 2
+          ][month(ds)==12 & mday(ds)==25 & country_code!='kr', lower_window := -2
+            ][month(ds)==12 & mday(ds)==26, upper_window := 1
+              ][month(ds)==1 & mday(ds)==1 & country_code!='cn', lower_window := -1
+                ][month(ds)==10 & mday(ds)==2 & country_code=='in', lower_window := -1] |>
+  setorder(country_code, ds)
+
 
 )
