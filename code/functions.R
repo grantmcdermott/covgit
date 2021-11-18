@@ -741,10 +741,10 @@ activity_map =
 gender_prep = function(data) {
   d = copy(data)
   d[, location := gsub(' \\(gender\\)', '', location)]
-  d[, country_code := fcase(location=='Bengaluru', 'in', 
-                            location=='Beijing', 'cn', 
-                            location=='London', 'gb', 
-                            default = 'us')]
+  d[, country_code := fcase(location=='Beijing',   'cn', ## Irrelevant for the gender DT
+                            location=='Bengaluru', 'in', 
+                            location=='London',    'gb', 
+                            default =              'us')]
   d = d[ignore(gender)!=3]
   d$gender = factor(d$gender, labels = c('0' = 'Female', '1' = 'Male'))
   return(d)
