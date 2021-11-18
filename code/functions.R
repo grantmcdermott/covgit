@@ -1023,3 +1023,47 @@ prop_plot =
       theme(legend.position = 'bottom', legend.title = element_blank())
     
   }
+
+
+# Prophet forecast --------------------------------------------------------
+
+prophet_fc =
+  function(data, 
+           holidays,
+           ycol = c('events', 'users'),
+           train_cutoff = '2019-12-31',
+           interval = 0.8) {
+    
+    ycol = match.arg(ycol)
+    
+    setnames(data, ycol, 'y')
+    if ('ds' %ni% names(data)) setnames(data, 'date', 'ds')
+    
+    pred_dt = data[, .(ds, y, country_code, location)]
+    cc = first(data$country_code)
+    holidays = holidays[country_code==cc, .(ds, holiday, lower_window, upper_window)]        
+    
+    mod = 
+      prophet(
+        pred_dt[ds<=as.IDate(train_cutoff)], 
+        holidays = holidays,
+        yearly.seasonality = TRUE,
+        daily.seasonality = FALSE,
+        interval.width = interval
+      )
+    
+    fc = predict(mod, pred_dt, holidays = holidays)
+    
+    pred_dt$pred = fc$yhat
+    pred_dt$lwr  = fc$yhat_lower
+    pred_dt$upr  = fc$yhat_upper
+    
+    pred_cols = c('pred', 'lwr', 'upr')
+    pred_dt[, paste0(pred_cols, '_dev') := lapply(.SD, \(x) y - x), .SDcols = pred_cols][]
+    
+    # Change the ycol name back
+    setnames(pred_dt, 'y', ycol)
+    
+    return(pred_dt)
+    
+  }
