@@ -344,6 +344,68 @@ gender = gender_prep(
   rbind(lon_gender, nyc_gender, sfo_gender, blr_gender, sea_gender)
   ),
 
+# Organizations -----------------------------------------------------------
+
+
+## Note: These are intended to be used as case-studies in the SM.
+
+## * Microsoft ----
+
+## https://github.com/microsoft
+msft = rbindlist(lapply(
+  2017:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y, 
+      hourly = TRUE,
+      # org_ids = c(microsoft = 6154722, MicrosoftDocs = 22479449, Azure = 6844498),
+      org_ids = c(microsoft = 6154722), ## Limit to main MSFT repo to avoid cloud ramp-up effects
+      city = 'Seattle', city_alias = 'Redmond',
+      state = 'WA', geo_ringer = "state!='OR'",
+      tz = 'America/Los_Angeles')
+  }
+)),
+
+## Write to disk
+write_msft = write_fst(msft, here('data/msft.fst')),
+
+
+## * Alibaba ----
+
+## https://github.com/alibaba
+baba = rbindlist(lapply(
+  2017:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y, 
+      hourly = TRUE,
+      org_ids = c(alibaba = 1961952), 
+      tz = 'Asia/Shanghai')
+  }
+))[, location := 'Beijing'], ## really, Hangzhou (but fine for Chinese lockdown matching)
+
+## Write to disk
+write_baba = write_fst(baba, here('data/baba.fst')),
+
+
+## UK Government Digital Service ----
+
+## https://github.com/alphagov
+agov = rbindlist(lapply(
+  2017:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y, 
+      hourly = TRUE,
+      org_ids = c(alphagov = 596977),
+      tz = 'Europe/London'
+    )
+  }
+))[, location := 'London'],
+
+## Write to disk
+write_agov = write_fst(agov, here('data/agov.fst')),
+
 
 # Plots -------------------------------------------------------------------  
 
