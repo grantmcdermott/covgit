@@ -344,8 +344,8 @@ gender = gender_prep(
   rbind(lon_gender, nyc_gender, sfo_gender, blr_gender, sea_gender)
   ),
 
-# Organizations -----------------------------------------------------------
 
+# Orgs --------------------------------------------------------------------
 
 ## Note: These are intended to be used as case-studies in the SM.
 
@@ -546,6 +546,55 @@ prop_gender_ohrs_events_ggsave = ggsave(
   width = 8, height = 10, device = cairo_pdf
   ),
 
+## ** Orgs ----
+
+## Microsoft
+prop_msft = prop_plot(
+  merge(msft, lockdown_dates, by = 'location')[
+    , location := 'Microsoft'],
+  prop = 'both', measure = 'events',
+  bad_dates = bad_dates, 
+  # treat_date2 = 10, 
+  title = NULL,
+  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
+  ),
+prop_msft_ggsave = ggsave(
+  here('figs/prop-msft.pdf'), 
+  plot = prop_msft,
+  width = 8, height = 5, device = cairo_pdf
+  ),
+
+## Alibaba
+prop_baba = prop_plot(
+  merge(baba, lockdown_dates, by = 'location')[
+    , location := 'Alibaba'],
+  prop = 'both', measure = 'events',
+  bad_dates = bad_dates, 
+  # treat_date2 = 10,
+  title = NULL,
+  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
+  ),
+prop_baba_ggsave = ggsave(
+  here('figs/prop-baba.pdf'), 
+  plot = prop_baba,
+  width = 8, height = 5, device = cairo_pdf
+  ),
+
+## UK AlphaGov
+prop_agov = prop_plot(
+  merge(agov, lockdown_dates, by = 'location')[
+    , location := 'UK government digital service'],
+  prop = 'both', measure = 'events',
+  bad_dates = bad_dates, 
+  treat_date2 = isoweek(as.IDate(c('2020-06-01', '2020-06-15', '2020-06-23'))), 
+  title = NULL,
+  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
+  ),
+prop_agov_ggsave = ggsave(
+  here('figs/prop-agov.pdf'), 
+  plot = prop_agov,
+  width = 8, height = 5, device = cairo_pdf
+  ),
 
 # Event-study regressions -------------------------------------------------
 
