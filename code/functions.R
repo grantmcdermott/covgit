@@ -766,10 +766,6 @@ collapse_prop =
            ...) {
     
     d = copy(data)[, date := as.IDate(date)]
-    if (!is.null(bad_dates)) {
-      if (buffer_bad_dates) bad_dates = buffer_dates(bad_dates)
-      d = d[date %ni% bad_dates]
-      }
     
     prop = match.arg(prop)
     if (prop=='both') prop = c('wend', 'ohrs')
@@ -846,15 +842,19 @@ collapse_prop =
       ][(prop_val)
       ][, prop_val := NULL][]
     
-    ## We also need to filter our bad dates (now weeks), since they will distort
-    ## things at the week level too.
+    ## We need to account for bad dates at week/weekend level so that they don't
+    ## distort things
     if (!is.null(bad_dates)) {
-      bad_weeks = data.table(date = bad_dates, 
-                             wk = isoweek(bad_dates), 
-                             yr = year(bad_dates),
-                             bweek = TRUE)[, .(yr, wk, bweek)]
-      bad_weeks = unique(bad_weeks)
-      d = merge(d, bad_weeks, all.x = TRUE)[is.na(bweek)][, bweek := NULL][]
+      bad_dates = as.IDate(bad_dates)
+      if (buffer_bad_dates) bad_dates = buffer_dates(bad_dates)
+      bad_weeks = data.table(date = bad_dates, yr = year(bad_dates),
+                             wk = isoweek(bad_dates), wend = wday(bad_dates) %in% c(1,7), 
+                             bdate = TRUE) %>%
+        .[, .(bdate = sum(bdate)), by=.(yr, wk, wend)] %>%
+        dcast(yr + wk ~ wend, sum, value.var = 'bdate') %>%
+        setnames(c('FALSE', 'TRUE'), c('bdates_wk', 'bdates_wend'))
+      d = merge(d, bad_weeks, all.x = TRUE, by = c('yr', 'wk'))
+      d[is.na(bdates_wk), bdates_wk:=0][is.na(bdates_wend), bdates_wend:=0][]
     }
     
     ## Some treatment variables and helpers, depending on the regression spec.
