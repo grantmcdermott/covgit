@@ -897,6 +897,7 @@ prop_plot =
            ylim = NULL,
            start_week = 2, end_week = 50, 
            treat_date = NULL, treat_date2 = NULL,
+           drop_bdates = TRUE,
            title = 'auto', facet_title = 'auto', caption = 'auto',
            scales = NULL, ncol = NULL, 
            labeller = 'label_value',
@@ -916,6 +917,13 @@ prop_plot =
                          simp_loc = simp_loc,
                          start_week = start_week, end_week = end_week,
                          ...)
+    
+    if (drop_bdates) {
+      if ('bdates_wend' %in% names(data)) {
+        data = data[bdates_wend==0 & bdates_wk==0]
+        # data[bdates_wend!=0, (mcols) := NA][bdates_wk!=0, (mcols) := NA]
+      }
+    }
 
     if (is.null(highlight_year)) highlight_year = 2020
     highlight_year = paste0(highlight_year)
