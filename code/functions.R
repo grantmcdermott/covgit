@@ -824,6 +824,7 @@ collapse_prop =
     d[, ':=' (lockdown = isoweek(lockdown), lockdown_yr = year(lockdown))]
     
     gvars = c('location', 'yr', 'wk', 'prop', 'prop_val', 'lockdown', 'lockdown_yr')
+    if ('country_code' %in% names(d)) gvars = c('country_code', gvars)
     if (by_gender) gvars = c(gvars, 'gender')
     gvars2 = setdiff(gvars, c('prop_val'))
     
