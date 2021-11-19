@@ -1,7 +1,7 @@
 plan =
   drake_plan(
 
-# Helper datasets and variables -------------------------------------------
+# Helper dates ------------------------------------------------------------
 
 bad_dates = as.IDate(c('2015-02-01', 
                        '2016-02-01',
@@ -12,6 +12,14 @@ bad_dates = as.IDate(c('2015-02-01',
                        '2020-08-21')),
 
 lockdown_dates = fread(here('data/lockdown-dates.csv'))[, .SD[1], by = location],
+
+holidays = rbindlist(lapply(
+  list.files(here('data/holidays'), full.names = TRUE),
+  function(f) fread(f)[, first(.SD), by = date
+  ][, country_code := gsub("\\.csv$", "", gsub(".*holidays_", "", f))
+  ][, .(date, holiday = name, country_code)]
+)),
+
 
 # Global ------------------------------------------------------------------
 
@@ -394,7 +402,7 @@ ts_countries_events_2_ggsave = ggsave(
   ),
 
 
-# * Proportion figures ----------------------------------------------------
+# * Proportion plots ------------------------------------------------------
 
 ## ** Global (prop = weekends, measure = both) ----
 prop_global_wend = prop_plot(
@@ -479,29 +487,44 @@ prop_gender_ohrs_events_ggsave = ggsave(
 
 # Event-study regressions -------------------------------------------------
 
+hols_prop = 
+  holidays[, .N, 
+           by = .(country_code, yr=year(date), wk=isoweek(date), 
+                  wend=ifelse(wday(date) %in% c(1,7), 'hols_wend', 'hols_wk'))] %>% 
+  dcast(... + N~wend),
+
 # * Gender ----------------------------------------------------------------
 
 gender_prop = collapse_prop(
   merge(gender, lockdown_dates),
   # prop = 'ohrs',
   measure = 'both',
-  # bad_dates = bad_dates, 
+  bad_dates = setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage
   min_year = 2017,
   by_gender = TRUE,
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
   )[, lockdown_global := 10 ## We'll actually use the 'Global' week 10 date as the common lockdown treatment
-    ][, ':=' (time_to_treatment = wk - lockdown, 
-              time_to_treatment_global = wk - lockdown_global)][],
+   ][, ':=' (time_to_treatment = wk - lockdown, 
+              time_to_treatment_global = wk - lockdown_global)
+   ] %>%
+  merge(hols_prop[, -'N'], all.x=TRUE, by = c('country_code', 'yr', 'wk'))  %>%
+  .[is.na(hols_wend), hols_wend := 0] %>%
+  .[is.na(hols_wk), hols_wk := 0],
+
 ## ** ES female ----
 es_female = feols(
-    events ~ i(time_to_treatment_global, treated, -1) | location + yr + time_to_treatment_global, 
+    events ~ i(time_to_treatment_global, treated, -1)  +
+      hols_wk + hols_wend + bdates_wk + bdates_wend | 
+      location + yr + time_to_treatment_global, 
     gender_prop[gender=='Female'],
     vcov = ~location^yr,
     split = ~prop
     ),
 ## ** ES male ----
 es_male = feols(
-    events ~ i(time_to_treatment_global, treated, -1) | location + yr + time_to_treatment_global, 
+    events ~ i(time_to_treatment_global, treated, -1) +
+      hols_wk + hols_wend + bdates_wk + bdates_wend | 
+      location + yr + time_to_treatment_global, 
     gender_prop[gender=='Male'],
     vcov = ~location^yr,
     split = ~prop
@@ -531,6 +554,7 @@ es_gender_plot_save = ggsave(
 
 ## Note: Prophet requires specifying holiday-weekend interactions manually
 ## https://github.com/facebook/prophet/issues/1157#issuecomment-539229937
+## The date field must also be called "ds".
 
 bad_dates_hols = CJ(ds = sort(c(bad_dates, as.IDate('2018-04-04'))), 
                     holiday  = 'GitHub down',
@@ -538,12 +562,7 @@ bad_dates_hols = CJ(ds = sort(c(bad_dates, as.IDate('2018-04-04'))),
 
 hols = 
   rbind(
-    rbindlist(lapply(
-      list.files(here('data/holidays'), full.names = TRUE),
-      \(f) fread(f)[year(date)>=2018, first(.SD), by = .(ds = date)
-      ][, country_code := gsub("\\.csv$", "", gsub(".*holidays_", "", f))
-      ][, .(ds, holiday = name, country_code)]
-    )),
+    holidays[year(date)>=2018, .(ds = date, holiday, country_code)],
     bad_dates_hols
   )[wday(ds) %in% c(1,7), holiday := 'Holiday (weekend)'
   ][, .(ds, country_code, holiday)
