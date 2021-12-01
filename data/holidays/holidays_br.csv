@@ -1,4 +1,20 @@
 date,dofw,name,type
+2017-01-01,Sunday,New Year's Day,National Holiday
+2017-02-27,Monday,Carnival Monday,Government Holiday
+2017-02-28,Tuesday,Carnival Tuesday,Government Holiday
+2017-03-01,Wednesday,Carnival end (until 2pm),Government Holiday
+2017-04-14,Friday,Good Friday,National Holiday
+2017-04-21,Friday,Tiradentes Day,National Holiday
+2017-05-01,Monday,Labor Day / May Day,National Holiday
+2017-06-15,Thursday,Corpus Christi,Government Holiday
+2017-09-07,Thursday,Independence Day,National Holiday
+2017-10-12,Thursday,Our Lady of Aparecida / Children's Day,National Holiday
+2017-10-28,Saturday,Public Service Holiday,Government Holiday
+2017-11-02,Thursday,All Souls' Day,National Holiday
+2017-11-15,Wednesday,Republic Proclamation Day,National Holiday
+2017-12-24,Sunday,Christmas Eve (from 2pm),Government Holiday
+2017-12-25,Monday,Christmas Day,National Holiday
+2017-12-31,Sunday,New Year's Eve (from 2pm),Government Holiday
 2018-01-01,Monday,New Year's Day,National Holiday
 2018-02-12,Monday,Carnival Monday,Government Holiday
 2018-02-13,Tuesday,Carnival Tuesday,Government Holiday

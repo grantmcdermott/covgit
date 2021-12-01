@@ -60,11 +60,11 @@ write_countries = write_fst(countries, here('data/countries.fst')),
 countries_hi = rbindlist(Map(
   function(country_code, country_name, tz, user_rank) {
     rbindlist(lapply(
-      2018:2020, function(y) {
+      2017:2020, function(y) {
         get_gh_activity_year(
           billing = billing, year = y, 
           country_code = country_code,
-          geo_ringer = "EXTRACT(YEAR from DATETIME(created_at)) <= 2017",
+          geo_ringer = "EXTRACT(YEAR from DATETIME(created_at)) <= 2016",
           tz = tz)
       }
     ))[, ':=' (location = country_name, user_rank = user_rank)]
@@ -673,7 +673,7 @@ bad_dates_hols = CJ(ds = sort(c(bad_dates, as.IDate('2018-04-04'))),
 
 hols = 
   rbind(
-    holidays[year(date)>=2018, .(ds = date, holiday, country_code)],
+    holidays[year(date)>=2017, .(ds = date, holiday, country_code)],
     bad_dates_hols
   )[wday(ds) %in% c(1,7), holiday := 'Holiday (weekend)'
   ][, .(ds, country_code, holiday)

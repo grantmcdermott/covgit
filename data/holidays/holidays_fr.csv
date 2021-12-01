@@ -1,4 +1,15 @@
 date,dofw,name,type
+2017-01-01,Sunday,New Year's Day,National holiday
+2017-04-17,Monday,Easter Monday,National holiday
+2017-05-01,Monday,Labor Day / May Day,National holiday
+2017-05-08,Monday,WWII Victory Day,National holiday
+2017-05-25,Thursday,Ascension Day,National holiday
+2017-06-05,Monday,Whit Monday,National holiday
+2017-07-14,Friday,Bastille Day,National holiday
+2017-08-15,Tuesday,Assumption of Mary,National holiday
+2017-11-01,Wednesday,All Saints' Day,National holiday
+2017-11-11,Saturday,Armistice Day,National holiday
+2017-12-25,Monday,Christmas Day,National holiday
 2018-01-01,Monday,New Year's Day,National holiday
 2018-04-02,Monday,Easter Monday,National holiday
 2018-05-01,Tuesday,Labor Day / May Day,National holiday
@@ -20,7 +31,7 @@ date,dofw,name,type
 2019-08-15,Thursday,Assumption of Mary,National holiday
 2019-11-01,Friday,All Saints' Day,National holiday
 2019-11-11,Monday,Armistice Day,National holiday
-2019-12-25,Wednesday,Christmas Day,National holida
+2019-12-25,Wednesday,Christmas Day,National holiday
 2020-01-01,Wednesday,New Year's Day,National holiday
 2020-04-13,Monday,Easter Monday,National holiday
 2020-05-01,Friday,Labor Day / May Day,National holiday
