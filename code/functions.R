@@ -1100,11 +1100,11 @@ prophet_fc =
 
 prophet_plot =
   function(data, 
-           type = c("diff", "raw"),
+           type = c("diff", "diffperc", "raw"),
            y = c('events', 'users'),
            forecast = NULL, forecast_labs_shift = 10,
            vlines = NULL
-  ) {
+           ) {
     
     dat = copy(data)
     type = match.arg(type)
@@ -1114,13 +1114,18 @@ prophet_plot =
       dat = setnames(dat, y, 'yraw')
       dat[is.na(yraw), c('pred', 'lwr', 'upr') := NA]
       ylab = paste("GitHub", gsub("s$", "", y), "activity ('000)")
+    } else if (type=='diffperc') {
+      pcols = grep('dev$', names(dat), value = TRUE)
+      dat[, (pcols) := lapply(.SD, \(x) x/events), .SDcols = pcols]
+      ylab = paste("Observed vs. predicted GitHub", gsub("s$", "", y), "activity (% difference)")
     } else {
-      ylab = paste("Observed less predicted GitHub", gsub("s$", "", y), "activity ('000)")
+      ylab = paste("Observed vs. predicted GitHub", gsub("s$", "", y), "activity ('000 difference)")
     }
+    
     
     gg = ggplot(dat, aes(x= ds))
     
-    if (type=='diff') {
+    if (type %in% c('diff', 'diffperc')) {
       gg = gg +
         geom_line(aes(y = pred_dev), col = '#7DB0DD') +
         geom_ribbon(aes(ymin = lwr_dev, ymax = upr_dev), alpha = 0.3, fill = '#7DB0DD') +
@@ -1152,15 +1157,21 @@ prophet_plot =
         )
     }
     
-    gg + 
+    gg = gg + 
       facet_wrap(~location, scales = 'free_y') + 
       geom_vline(xintercept = as.IDate(vlines), lty = 2, col = 'grey50') +
       scale_x_date(date_labels = "%b '%y") +
-      scale_y_continuous(labels = function(x) x/1e3) +
       labs(x = 'Date', y = ylab) +
       theme(
         legend.position = 'bottom', legend.title = element_blank(),
         panel.grid.minor = element_blank(),
         strip.text.x = element_text(hjust = 0.5)
-      ) 
+        )
+    
+    if (type=='diffperc') {
+      gg + scale_y_percent()
+    } else {
+      gg + scale_y_continuous(labels = function(x) x/1e3)
+    }
+    
   }
