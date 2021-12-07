@@ -612,7 +612,7 @@ get_gh_activity_year =
 
 ts_plot = 
   function(data, 
-           measure = c('events', 'users'),
+           measure = c('events', 'users', 'productivity'),
            bad_dates = bad_dates, 
            buffer_bad_dates = TRUE,
            by_location = FALSE,
@@ -620,6 +620,10 @@ ts_plot =
            theme = c('light', 'dark', 'void')) {
     
     measure = match.arg(measure)
+    if (measure=='productivity') {
+      data = copy(data) 
+      data[, productivity := events/users]
+    }
     theme = match.arg(theme)
     strip_col = ifelse(theme %in% c('light', 'void'), 'black', 'white')
     
