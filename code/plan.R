@@ -448,10 +448,12 @@ ts_global_users_ggsave = ggsave(
   ),
 
 # ** Highlighted countries ----
-## Note: We'll break these up into separate plots to conserve visual space...
+# Note: We'll limit these to 2019-2020 and break them up into separate plots to 
+# conserve visual space...
 ## Events
 ts_countries_events_1 = ts_plot(
-  countries_hi[location %in% sort(unique(countries_hi$location))[1:6]], 
+  countries_hi[year(date) %in% 2019:2020][
+    location %in% sort(unique(countries_hi$location))[1:6]], 
   bad_dates = bad_dates, measure = 'events', 
   by_location = TRUE, 
   lockdown_dates = as.IDate(c('2020-02-10', '2020-03-02')),
@@ -463,7 +465,8 @@ ts_countries_events_1_ggsave = ggsave(
   width = 8, height = 10, device = cairo_pdf
   ),
 ts_countries_events_2 = ts_plot(
-  countries_hi[location %in% sort(unique(countries_hi$location))[7:12]], 
+  countries_hi[year(date) %in% 2019:2020][
+    location %in% sort(unique(countries_hi$location))[7:12]], 
   bad_dates = bad_dates, measure = 'events', 
   by_location = TRUE, 
   lockdown_dates = as.IDate(c('2020-02-10', '2020-03-02')),
@@ -474,8 +477,10 @@ ts_countries_events_2_ggsave = ggsave(
   plot = ts_countries_events_2,
   width = 8, height = 10, device = cairo_pdf
   ),
+## Productivity
 ts_countries_productivity_1 = ts_plot(
-  countries_hi[location %in% sort(unique(countries_hi$location))[1:6]][
+  countries_hi[year(date) %in% 2019:2020][
+    location %in% sort(unique(countries_hi$location))[1:6]][
     week(date) %in% 2:50], 
   bad_dates = bad_dates, measure = 'productivity', 
   by_location = TRUE, 
@@ -488,7 +493,8 @@ ts_countries_productivity_1_ggsave = ggsave(
   width = 8, height = 10, device = cairo_pdf
 ),
 ts_countries_productivity_2 = ts_plot(
-  countries_hi[location %in% sort(unique(countries_hi$location))[7:12]][
+  countries_hi[year(date) %in% 2019:2020][
+    location %in% sort(unique(countries_hi$location))[7:12]][
     week(date) %in% 2:50],  
   bad_dates = bad_dates, measure = 'productivity', 
   by_location = TRUE, 
