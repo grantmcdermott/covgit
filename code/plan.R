@@ -741,11 +741,15 @@ hols =
   ][, c('lower_window', 'upper_window') := 0
   ][country_code=='us' & holiday=='Thanksgiving Day', ':=' (upper_window = 1, 
                                                             lower_window = -1)
-  ][month(ds)==12 & mday(ds)==25 & country_code %in% c('us', 'fr'), upper_window := 2
-  ][month(ds)==12 & mday(ds)==25 & country_code!='kr', lower_window := -2
+  ][country_code %in% c('us', 'fr') & month(ds)==12 & mday(ds)==25, upper_window := 2
+  ][country_code!='kr' & month(ds)==12 & mday(ds)==25, lower_window := -2
   ][month(ds)==12 & mday(ds)==26, upper_window := 1
-  ][month(ds)==1 & mday(ds)==1 & country_code!='cn', lower_window := -1
-  ][month(ds)==10 & mday(ds)==2 & country_code=='in', lower_window := -1] %>%
+  ][country_code!='cn' & month(ds)==1 & mday(ds)==1, lower_window := -2
+  # ][country_code=='kr' & month(ds)==1 & mday(ds)==25, lower_window := -1
+  ][country_code=='cn' & holiday=='Spring Festival Eve', lower_window := -2
+  ][country_code %in% c('cn','in','jp','kr') & ds==as.IDate('2019-09-12'), upper_window := 1
+  ][country_code=='se' & month(ds)==6 & mday(ds)>=20 & holiday=='Holiday (weekend)', lower_window := -1
+  ][country_code=='in' & month(ds)==10 & mday(ds)==2, lower_window := -1] %>%
   setorder(country_code, ds),
 
 ## ** Highlighted countries ----
@@ -753,9 +757,12 @@ hols =
 prophet_co = rbindlist(lapply(
   split(countries_hi, countries_hi$country_code), 
   function(x) prophet_fc(x, holidays = hols, level = 0.9, 
-                         outliers = c('2020-06-10', '2019-09-12'))
+                         outliers = c('2020-06-10', '2019-09-12', 
+                                      '2020-01-24', ## Only KR but enough of a pain that will remove for all
+                                      '2019-12-23', '2019-12-30', '2018-12-30'))
   )),
 write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst')),
+
 
 ## *** Plots ----
 
@@ -776,6 +783,16 @@ prophet_co_plot_placebo_ggsave = ggsave(
   plot = prophet_co_plot_placebo,
   width = 16, height = 9, device = cairo_pdf
   ),
+## Difference percentage
+prophet_co_plot_perc = prophet_plot(
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01',
+  type = 'diffperc'
+),
+prophet_co_plot_perc_ggsave = ggsave(
+  here('figs/prophet-countries-perc.pdf'), 
+  plot = prophet_co_plot_perc,
+  width = 16, height = 9, device = cairo_pdf
+),
 ## Raw trends
 prophet_co_plot_raw = prophet_plot(
   prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01',
