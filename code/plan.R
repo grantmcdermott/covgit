@@ -33,6 +33,17 @@ g = rbindlist(lapply(
 ## Write to disk
 write_global = write_fst(g, here('data/global.fst')),
 
+
+## As above, but just push events
+gpush = rbindlist(lapply(
+  2015:2020, function(y) {
+    get_gh_activity_year(billing = billing, year = y, event_type = 'Push')
+  }
+)),
+
+## Write to disk
+write_global_push = write_fst(gpush, here('data/global-push-events.fst')),
+
 # All countries separately ------------------------------------------------
 
 ## Get 2015--2020 activity data for all countries
@@ -524,6 +535,23 @@ prop_global_wend_events_ggsave = ggsave(
   plot = prop_global_wend_events,
   width = 8, height = 5, device = cairo_pdf
   ),
+## ** Global (prop = weekends, measure = push events) ----
+prop_global_wend_pushes = prop_plot(
+  merge(gpush, lockdown_dates),
+  prop = 'wend', measure = 'events',
+  bad_dates = bad_dates,
+  treat_date2 = 10, ## Global treatment date
+  # ylim = c(0.15, 0.25),
+  title = NULL, facet_title = NULL,
+  scales = 'free_y',
+  labeller = labeller(.multi_line=FALSE)
+),
+prop_global_wend_pushes_ggsave = ggsave(
+  here('figs/prop-global-wend-pushes.pdf'), 
+  plot = prop_global_wend_pushes,
+  width = 8, height = 5, device = cairo_pdf
+),
+
 
 ## ** Cities (prop = both, measure = events) ----
 prop_cities_both_events = prop_plot(
