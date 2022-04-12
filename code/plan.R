@@ -720,6 +720,89 @@ es_gender_plot_save = ggsave(
   ),
 
 
+# * Extra regs ------------------------------------------------------------
+
+g_prop = collapse_prop(
+  merge(g, lockdown_dates),
+  prop = 'wend',
+  bad_dates = setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage
+  treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
+  )[, time_to_treatment := wk - lockdown][],
+
+## ** ES global ----
+es_global = feols(
+  events ~ i(time_to_treatment, treated, -1) + bdates_wk + bdates_wend 
+  | yr + time_to_treatment, 
+  g_prop,
+  vcov = ~yr
+  ),
+
+cities_prop = collapse_prop(
+  merge(cities, lockdown_dates)[, 
+                                country_code := fcase(location=='London', 'gb',
+                                                      location=='Beijing', 'cn',
+                                                      default = 'us')],
+  measure = 'both',
+  bad_dates =  setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage, 
+  min_year = 2017,
+  treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
+  ) %>%
+  .[, lockdown_global := 10] %>% ## We'll actually use the 'Global' week 10 date as the common lockdown treatment 
+  .[, ':=' (time_to_treatment_local = wk - lockdown, 
+            time_to_treatment_global = wk - lockdown_global)] %>%
+  .[, time_to_treatment := ifelse(location=='Beijing', 
+                                  time_to_treatment_local, 
+                                  time_to_treatment_global)] %>%
+  merge(hols_prop[, -'N'], all.x=TRUE, by = c('country_code', 'yr', 'wk'))  %>%
+  .[is.na(hols_wend), hols_wend := 0] %>%
+  .[is.na(hols_wk), hols_wk := 0],
+
+## ** ES cities wend ----
+es_cities_wend = feols(
+  events ~ i(time_to_treatment, treated, -1) +
+    hols_wk + hols_wend + bdates_wk + bdates_wend | 
+    location + yr + time_to_treatment, 
+  cities_prop[prop=='Weekends'],
+  vcov = ~location^yr,
+  fsplit = ~location
+  ),
+
+## ** ES cities ohrs ----
+es_cities_ohrs = feols(
+  events ~ i(time_to_treatment, treated, -1) +
+    hols_wk + hols_wend + bdates_wk + bdates_wend | 
+    location + yr + time_to_treatment_global, 
+  cities_prop[prop=='Out-of-hours'],
+  vcov = ~location^yr,
+  fsplit = ~location
+  ),
+
+## ** Export tabs ----
+etable_wend = etable(
+    es_global, es_cities_wend, 
+    dict = c(treated = "2020", time_to_treatment = "Lockdown",
+             events = "Events", yr = "Year", location = "Location"),
+    drop = "[[:digit:]]{2}$|bdates|hols", 
+    headers = list("^:_:Location" = c("Global", "Cities (all)", tail(names(es_cities_wend), -1))),
+    se.row = FALSE,
+    notes = c("Clustered standard errors (by location--year) in parentheses."),
+    style.tex = style.tex(main = "aer"),
+    file = "tabs/es-wend.tex", replace = TRUE
+    ),
+
+etable_ohrs = etable(
+    es_cities_ohrs, 
+    dict = c(treated = "2020", time_to_treatment = "Lockdown",
+             events = "Events", yr = "Year", location = "Location"),
+    drop = "[[:digit:]]{2}$|bdates|hols", 
+    headers = list("^:_:Location" = c("Cities (all)", tail(names(es_cities_wend), -1))),
+    se.row = FALSE,
+    notes = c("Clustered standard errors (by location--year) in parentheses."),
+    style.tex = style.tex(main = "aer"),
+    file = "tabs/es-ohrs.tex", replace = TRUE
+    ),
+
+
 # Prophet -----------------------------------------------------------------
 
 ## ** Holidays ----
