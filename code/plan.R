@@ -119,17 +119,22 @@ write_countries_hi = write_fst(countries_hi, here('data/countries-hi.fst')),
 
 # * London ----------------------------------------------------------------
 
-## Get 2015--2020 (hourly) LON data
-lon = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) LON data
+lon = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y, 
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'London', geo_ringer = "country_code!='ca'",
       tz = 'Europe/London'
     )
-    }
-  )),
+  },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+)),
 
 ## Write to disk
 write_lon = write_fst(lon, here('data/lon.fst')),
@@ -138,7 +143,7 @@ write_lon = write_fst(lon, here('data/lon.fst')),
 # ** London (gender matched) ----------------------------------------------
 
 lon_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -155,17 +160,22 @@ write_lon_gender = write_fst(lon_gender, here('data/lon-gender.fst')),
 
 # * New York --------------------------------------------------------------
 
-## Get 2015--2020 (hourly) NYC data
-nyc = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) NYC data
+nyc = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y,
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'New York', state = 'NY',
       tz = 'America/New_York'
     )
-    }
-  )),
+  },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+)),
 
 ## Write to disk
 write_nyc = write_fst(nyc, here('data/nyc.fst')),
@@ -175,7 +185,7 @@ write_nyc = write_fst(nyc, here('data/nyc.fst')),
 ## Same as per the above, except this time matched to gender for as many users
 ## as possible
 nyc_gender = rbindlist(lapply(
-2015:2020, function(y) {
+2017:2020, function(y) {
 get_gh_activity_year(
   billing = billing, year = y,
   hourly = TRUE,
@@ -192,17 +202,22 @@ write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
 
 # * San Francisco ----------------------------------------------------------
 
-## Get 2015--2020 (hourly) San Francisco data
-sfo = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) San Francisco data
+sfo = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y,
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'San Francisco', state = 'CA',
       tz = 'America/Los_Angeles'
     )
-    }
-  )),
+  },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+)),
 
 ## Write to disk
 write_sfo = write_fst(sfo, here('data/sfo.fst')),
@@ -212,7 +227,7 @@ write_sfo = write_fst(sfo, here('data/sfo.fst')),
 ## Same as per the above, except this time matched to gender for as many users
 ## as possible
 sfo_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -220,26 +235,32 @@ sfo_gender = rbindlist(lapply(
       tz = 'America/Los_Angeles',
       users_tab = 'mcd-lab.covgit.sfo_users_gender_matched', 
       gender = TRUE
-    )
-  }
-)),
+      )
+    }
+  )),
+
 
 ## Write to disk
 write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
 
 # * Beijing ---------------------------------------------------------------
 
-## Get 2015--2020 (hourly) BEI data
-bei = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) BEI data
+bei = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y, 
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'Beijing',
       tz = 'Asia/Shanghai'
-    )
-  }
-)),
+      )
+    },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+  )),
 
 ## Write to disk
 write_bei = write_fst(bei, here('data/bei.fst')),
@@ -247,17 +268,22 @@ write_bei = write_fst(bei, here('data/bei.fst')),
 
 # * Bengaluru (Bangalore) -------------------------------------------------
 
-## Get 2015--2020 (hourly) BLR data
-blr = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) BLR data
+blr = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y, 
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'Bengaluru', city_alias = 'Bangalore',
       tz = 'Asia/Kolkata'
-    )
-  }
-)),
+      )
+    },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+  )),
 
 ## Write to disk
 write_blr = write_fst(blr, here('data/blr.fst')),
@@ -266,7 +292,7 @@ write_blr = write_fst(blr, here('data/blr.fst')),
 # ** Bengalru (gender matched) --------------------------------------------
 
 blr_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -276,7 +302,8 @@ blr_gender = rbindlist(lapply(
       gender = TRUE
     )
   }
-)),
+  )),
+
 
 ## Write to disk
 write_blr_gender = write_fst(blr_gender, here('data/blr-gender.fst')),
@@ -284,18 +311,23 @@ write_blr_gender = write_fst(blr_gender, here('data/blr-gender.fst')),
 
 # * Seattle ---------------------------------------------------------------
 
-## Get 2015--2020 (hourly) Seattle data
-sea = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) Seattle data
+sea = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y,
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'Seattle', city_alias = 'Redmond',
       state = 'WA', geo_ringer = "state!='OR'",
       tz = 'America/Los_Angeles'
-    )
-  }
-)),
+      )
+    },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+  )),
 
 ## Write to disk
 write_sea = write_fst(sea, here('data/sea.fst')),
@@ -308,7 +340,7 @@ write_sea = write_fst(sea, here('data/sea.fst')),
 ## LinkedIn profile. Allows us to isolate intensive margin, as well as 
 ## categorise by age and gender.
 sea_linkedin = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -316,9 +348,9 @@ sea_linkedin = rbindlist(lapply(
       tz = 'America/Los_Angeles',
       users_tab = 'mcd-lab.covgit.sea_users_linkedin',
       gender = TRUE, age_buckets = c(30, 40, 50)
-    )
-  }
-)),
+      )
+    }
+  )),
 
 ## Write to disk
 write_sea_linkedin = write_fst(sea_linkedin, here('data/sea-linkedin.fst')),
@@ -328,7 +360,7 @@ write_sea_linkedin = write_fst(sea_linkedin, here('data/sea-linkedin.fst')),
 ## Similar to the above, except this time matched to gender for all Seattle
 ## users (not just those with an identifiable LinkedIn profile)
 sea_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
