@@ -102,8 +102,8 @@ countries_hi = rbindlist(Map(
           tz = tz)
         },
       y = 2017:2020,
-      u = u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
-                rep("ghtorrentmysql1906.MySQL1906.users", 2))
+      u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+            rep("ghtorrentmysql1906.MySQL1906.users", 2))
       ))[, ':=' (location = country_name, user_rank = user_rank)]
     },
   country_code = c('us', 'cn', 'de', 
