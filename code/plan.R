@@ -9,7 +9,10 @@ bad_dates = as.IDate(c('2015-02-01',
                        '2018-04-03', 
                        '2019-09-12',
                        '2020-06-10',
-                       '2020-08-21')),
+                       '2020-08-21',
+                       '2021-03-09', '2021-03-10',
+                       '2021-05-07', '2021-05-08', '2021-05-09', '2021-05-10', '2021-05-11',
+                       '2021-08-26', '2021-08-27')),
 
 lockdown_dates = fread(here('data/lockdown-dates.csv'))[, .SD[1], by = location],
 
@@ -23,12 +26,16 @@ holidays = rbindlist(lapply(
 
 # Global ------------------------------------------------------------------
 
-## Get 2015--2020 global activity data
+## Get 2015--2021 global activity data, taking account of the fact that GH
+## Archive tarballs weren't generated correctly around October 2021. See:
+## https://github.com/igrigorik/gharchive.org/issues/256
+## https://github.com/igrigorik/gharchive.org/issues/259
 g = rbindlist(lapply(
-  2015:2020, function(y) {
+  2015:2021, function(y) {
     get_gh_activity_year(billing = billing, year = y)
     }
-  )),
+  ))[year(date)==2021 & isoweek(date) %in% 40:43, ## NB: GitHub Archive glitch
+     c('events', 'users') := NA],
 
 ## Write to disk
 write_global = write_fst(g, here('data/global.fst')),
@@ -36,18 +43,19 @@ write_global = write_fst(g, here('data/global.fst')),
 
 ## As above, but just push events
 gpush = rbindlist(lapply(
-  2015:2020, function(y) {
+  2015:2021, function(y) {
     get_gh_activity_year(billing = billing, year = y, event_type = 'Push')
-  }
-)),
+    }
+  ))[year(date)==2021 & isoweek(date) %in% 40:43, ## NB: GitHub Archive glitch
+     c('events', 'users') := NA],
 
 ## Write to disk
 write_global_push = write_fst(gpush, here('data/global-push-events.fst')),
 
 
-## NOTE: We only have geo/location information for users (from GH Torrent) going 
+## NOTE! We only have geo/location information for users (from GH Torrent) going 
 ## back until 2017 and up to the end of 2019. Hence, we'll limit all queries
-## that require a location-based field to 2017-2020 from hereon out.
+## that require a location-based field to 2017-2020 from here on out.
 
 # All countries separately ------------------------------------------------
 
@@ -96,8 +104,8 @@ countries_hi = rbindlist(Map(
       y = 2017:2020,
       u = u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
                 rep("ghtorrentmysql1906.MySQL1906.users", 2))
-    ))[, ':=' (location = country_name, user_rank = user_rank)]
-  },
+      ))[, ':=' (location = country_name, user_rank = user_rank)]
+    },
   country_code = c('us', 'cn', 'de', 
                    'gb', 'fr', 'in', 
                    'br', 'jp', 'se',
@@ -114,7 +122,7 @@ countries_hi = rbindlist(Map(
                    4, 5, 7, 
                    9, 10, 16,
                    18, 19, 40)
-)),
+  )),
 
 ## Write to disk
 write_countries_hi = write_fst(countries_hi, here('data/countries-hi.fst')),
@@ -152,7 +160,7 @@ lon = rbindlist(Map(
   y = 2017:2020,
   u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
         rep("ghtorrentmysql1906.MySQL1906.users", 2))
-)),
+  )),
 
 ## Write to disk
 write_lon = write_fst(lon, here('data/lon.fst')),
@@ -169,9 +177,9 @@ lon_gender = rbindlist(lapply(
       tz = 'Europe/London',
       users_tab = 'mcd-lab.covgit.lon_users_gender_matched', 
       gender = TRUE
-    )
-  }
-)),
+      )
+    }
+  )),
 
 ## Write to disk
 write_lon_gender = write_fst(lon_gender, here('data/lon-gender.fst')),
@@ -193,7 +201,7 @@ nyc = rbindlist(Map(
   y = 2017:2020,
   u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
         rep("ghtorrentmysql1906.MySQL1906.users", 2))
-)),
+  )),
 
 ## Write to disk
 write_nyc = write_fst(nyc, here('data/nyc.fst')),
@@ -203,18 +211,18 @@ write_nyc = write_fst(nyc, here('data/nyc.fst')),
 ## Same as per the above, except this time matched to gender for as many users
 ## as possible
 nyc_gender = rbindlist(lapply(
-2017:2020, function(y) {
-get_gh_activity_year(
-  billing = billing, year = y,
-  hourly = TRUE,
-  location_add = 'New York, NY (gender)',
-  tz = 'America/New_York',
-  users_tab = 'mcd-lab.covgit.nyc_users_gender_matched', 
-  gender = TRUE
-)
-}
-)),
-
+  2017:2020, function(y) {
+    get_gh_activity_year(
+    billing = billing, year = y,
+    hourly = TRUE,
+    location_add = 'New York, NY (gender)',
+    tz = 'America/New_York',
+    users_tab = 'mcd-lab.covgit.nyc_users_gender_matched', 
+    gender = TRUE
+    )
+  }
+  )),
+  
 ## Write to disk
 write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
 
@@ -235,7 +243,7 @@ sfo = rbindlist(Map(
   y = 2017:2020,
   u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
         rep("ghtorrentmysql1906.MySQL1906.users", 2))
-)),
+  )),
 
 ## Write to disk
 write_sfo = write_fst(sfo, here('data/sfo.fst')),
@@ -577,7 +585,7 @@ prop_global_wend_ggsave = ggsave(
   ),
 ## ** Global (prop = weekends, measure = events) ----
 prop_global_wend_events = prop_plot(
-  merge(g, lockdown_dates),
+  merge(g[year(date)!=2021], lockdown_dates), ## For main text we exclude 2021 data
   prop = 'wend', measure = 'events',
   bad_dates = bad_dates,
   treat_date2 = 10, ## Global treatment date
@@ -593,7 +601,7 @@ prop_global_wend_events_ggsave = ggsave(
   ),
 ## ** Global (prop = weekends, measure = push events) ----
 prop_global_wend_pushes = prop_plot(
-  merge(gpush, lockdown_dates),
+  merge(gpush[year(date)!=2021], lockdown_dates),
   prop = 'wend', measure = 'events',
   bad_dates = bad_dates,
   treat_date2 = 10, ## Global treatment date
