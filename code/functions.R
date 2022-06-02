@@ -1057,7 +1057,8 @@ prophet_fc =
            ycol = c('events', 'users'),
            train_cutoff = '2019-12-31',
            outliers = NULL,
-           level = 0.8) {
+           level = 0.8,
+           ...) {
     
     ycol = match.arg(ycol)
     
@@ -1077,7 +1078,8 @@ prophet_fc =
         holidays = holidays,
         yearly.seasonality = TRUE,
         daily.seasonality = FALSE,
-        interval.width = level
+        interval.width = level,
+        ...
       )
     
     fc = predict(mod, pred_dt, holidays = holidays)

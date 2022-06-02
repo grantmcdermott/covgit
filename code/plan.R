@@ -840,6 +840,7 @@ hols =
 prophet_co = rbindlist(lapply(
   split(countries_hi, countries_hi$country_code), 
   function(x) prophet_fc(x, holidays = hols, level = 0.9, 
+                         seasonality.mode = 'multiplicative',
                          outliers = c('2020-06-10', '2019-09-12', 
                                       '2020-01-24', ## Only KR but enough of a pain that will remove for all
                                       '2019-12-23', '2019-12-30', '2018-12-30'))
