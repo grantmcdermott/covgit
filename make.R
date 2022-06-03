@@ -36,5 +36,7 @@ source("code/plan.R")
 
 # Make --------------------------------------------------------------------
 
+## Note: These next two commands will trigger some (harmless) warnings about 
+## type conversions that you can ignore
 vis_drake_graph(plan) ## Requires: install.packages(c('visNetwork', 'lubridate'))
 make(plan, verbose = 2)

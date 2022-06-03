@@ -573,6 +573,7 @@ prop_global_wend = prop_plot(
   merge(g, lockdown_dates),
   prop = 'wend', measure = 'both',
   bad_dates = bad_dates,
+  highlight_year = 2020:2021,
   treat_date2 = 10, ## Global treatment date
   ylim = c(0.15, 0.25),
   scales = 'free_y',
