@@ -566,6 +566,39 @@ ts_countries_productivity_2_ggsave = ggsave(
 ),
 
 
+# * Hourly plots (cities) -------------------------------------------------
+
+hourly_plot_lon = hourly_plot(cities[location=="London"]),
+hourly_plot_lon_ggsave = ggsave(here("figs/hourly-lon.pdf"),
+                                plot = hourly_plot_lon,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_nyc = hourly_plot(cities[location=="New York, NY"]),
+hourly_plot_nyc_ggsave = ggsave(here("figs/hourly-nyc.pdf"),
+                                plot = hourly_plot_nyc,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_sfo = hourly_plot(cities[location=="San Francisco, CA"]),
+hourly_plot_sfo_ggsave = ggsave(here("figs/hourly-sfo.pdf"),
+                                plot = hourly_plot_sfo,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_bei = hourly_plot(cities[location=="Beijing"]),
+hourly_plot_bei_ggsave = ggsave(here("figs/hourly-bei.pdf"),
+                                plot = hourly_plot_bei,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_blr = hourly_plot(cities[location=="Bengaluru"]),
+hourly_plot_blr_ggsave = ggsave(here("figs/hourly-blr.pdf"),
+                                plot = hourly_plot_blr,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_sea = hourly_plot(cities[location=="Seattle, WA"]),
+hourly_plot_sea_ggsave = ggsave(here("figs/hourly-sea.pdf"),
+                                plot = hourly_plot_sea,
+                                width = 8, height = 5, device = cairo_pdf),
+
+
 # * Proportion plots ------------------------------------------------------
 
 ## ** Global (prop = weekends, measure = both) ----
@@ -715,6 +748,7 @@ prop_agov_ggsave = ggsave(
   plot = prop_agov,
   width = 8, height = 5, device = cairo_pdf
   ),
+
 
 # Event-study regressions -------------------------------------------------
 

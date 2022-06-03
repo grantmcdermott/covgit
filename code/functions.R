@@ -1185,3 +1185,34 @@ prophet_plot =
     }
     
   }
+
+
+# Hourly plot -------------------------------------------------------------
+
+## Expects the 'cities' data and returns average hourly data for the first six 
+## months of each year for a given city (i.e. the sole function argument).
+## Useful for getting a finer sense of how the distribution of a city's workday
+## has changed, including vanishing lunchbreaks.
+hourly_plot = 
+  function(dat = cities, show_title = TRUE) {
+    dat[month(date) %in% 1:6, 
+           .(events = mean(events)), 
+           by = .(location, hr, mnth = month(date), yr = year(date))
+    ][, 
+      Treated := mnth>=3 & yr>=2020
+    ][location=="Beijing", 
+      Treated := mnth>=2 & yr>=2020
+    ] |> 
+      ggplot(aes(x = hr, y = events, fill = Treated)) + 
+      geom_col() + 
+      ## Below looks nice, but better to match colour palette of prob plots...
+      # scale_fill_discrete_qualitative(palette = "Harmonic") +
+      scale_fill_manual(values = c('FALSE' = '#A4DDEF',
+                                   'TRUE' = '#E16A86')) +
+      labs(x = "Hour", y = "Mean number of events") +
+      { if (show_title) labs(title = gsub(",.*", "", unique(dat$location))) } +
+      facet_grid(yr ~ factor(month.abb[mnth], levels = month.abb)) +
+      theme(legend.position = "none", 
+            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.spacing = unit(0.5, "char"))
+  }
