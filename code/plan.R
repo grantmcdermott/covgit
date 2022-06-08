@@ -28,7 +28,6 @@ holidays = rbindlist(lapply(
 
 ## Get 2015--2021 global activity data, taking account of the fact that GH
 ## Archive tarballs weren't generated correctly around October 2021. See:
-## https://github.com/igrigorik/gharchive.org/issues/256
 ## https://github.com/igrigorik/gharchive.org/issues/259
 g = rbindlist(lapply(
   2015:2021, function(y) {
@@ -633,6 +632,22 @@ prop_global_wend_events_ggsave = ggsave(
   plot = prop_global_wend_events,
   width = 8, height = 5, device = cairo_pdf
   ),
+prop_global_wend_events21 = prop_plot(
+  merge(g, lockdown_dates), 
+  prop = 'wend', measure = 'events',
+  bad_dates = bad_dates,
+  highlight_year = 2020:2021,
+  treat_date2 = 10, ## Global treatment date
+  ylim = c(0.15, 0.25),
+  title = NULL, facet_title = NULL,
+  scales = 'free_y',
+  labeller = labeller(.multi_line=FALSE)
+  ),
+prop_global_wend_events21_ggsave = ggsave(
+  here('figs/prop-global-wend-events21.pdf'), 
+  plot = prop_global_wend_events21,
+  width = 8, height = 5, device = cairo_pdf
+  ),
 ## ** Global (prop = weekends, measure = push events) ----
 prop_global_wend_pushes = prop_plot(
   merge(gpush[year(date)!=2021], lockdown_dates),
@@ -816,7 +831,7 @@ es_gender_plot_save = ggsave(
 # * Extra regs ------------------------------------------------------------
 
 g_prop = collapse_prop(
-  merge(g, lockdown_dates),
+  merge(g[year(date)<=2020], lockdown_dates),
   prop = 'wend',
   bad_dates = setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
@@ -864,7 +879,7 @@ es_cities_wend = feols(
 es_cities_ohrs = feols(
   events ~ i(time_to_treatment, treated, -1) +
     hols_wk + hols_wend + bdates_wk + bdates_wend | 
-    location + yr + time_to_treatment_global, 
+    location + yr + time_to_treatment, 
   cities_prop[prop=='Out-of-hours'],
   vcov = ~location^yr,
   fsplit = ~location
@@ -873,24 +888,24 @@ es_cities_ohrs = feols(
 ## ** Export tabs ----
 etable_wend = etable(
     es_global, es_cities_wend, 
-    dict = c(treated = "2020", time_to_treatment = "Lockdown",
+    dict = c(treated = "Treated", time_to_treatment = "Lockdown",
              events = "Events", yr = "Year", location = "Location"),
     drop = "[[:digit:]]{2}$|bdates|hols", 
     headers = list("^:_:Location" = c("Global", "Cities (all)", tail(names(es_cities_wend), -1))),
     se.row = FALSE,
-    notes = c("Clustered standard errors (by location--year) in parentheses."),
+    notes = c("Clustered standard errors by location--year in parentheses."),
     style.tex = style.tex(main = "aer"),
     file = "tabs/es-wend.tex", replace = TRUE
     ),
 
 etable_ohrs = etable(
     es_cities_ohrs, 
-    dict = c(treated = "2020", time_to_treatment = "Lockdown",
+    dict = c(treated = "Treated", time_to_treatment = "Lockdown",
              events = "Events", yr = "Year", location = "Location"),
     drop = "[[:digit:]]{2}$|bdates|hols", 
     headers = list("^:_:Location" = c("Cities (all)", tail(names(es_cities_wend), -1))),
     se.row = FALSE,
-    notes = c("Clustered standard errors (by location--year) in parentheses."),
+    notes = c("Clustered standard errors by location--year in parentheses."),
     style.tex = style.tex(main = "aer"),
     file = "tabs/es-ohrs.tex", replace = TRUE
     ),
