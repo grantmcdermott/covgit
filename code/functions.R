@@ -905,7 +905,7 @@ prop_plot =
            start_week = 2, end_week = 50, 
            treat_date = NULL, treat_date2 = NULL,
            drop_bdates = TRUE,
-           title = 'auto', facet_title = 'auto', caption = 'auto',
+           title = 'auto', facet_title = 'auto', caption = NULL,
            scales = NULL, ncol = NULL, 
            labeller = 'label_value',
            ...) {
@@ -972,17 +972,19 @@ prop_plot =
         title = 'Proportion of activity outside normal office hours'
       }
     }
-    if (caption=='auto') {
-      if (prop %in% c('both', 'ohrs')) {
-        start_hr = head(work_hours, 1)
-        start_hr = ifelse(start_hr>12, paste(start_hr-12, 'pm'), paste(start_hr, 'am'))
-        end_hr = tail(work_hours, 1)
-        end_hr = ifelse(end_hr>12, paste(end_hr-12, 'pm'), paste(end_hr, 'am'))
-        caption = paste0('Note: "Out-of-hours" defined as the period outside ', 
-                         start_hr,' to ', end_hr, '.')
-      } else {
-        caption = NULL
-      }
+    if (!is.null(caption)) {
+      if (caption=='auto') {
+        if (prop %in% c('both', 'ohrs')) {
+            start_hr = head(work_hours, 1)
+            start_hr = ifelse(start_hr>12, paste(start_hr-12, 'pm'), paste(start_hr, 'am'))
+            end_hr = tail(work_hours, 1)
+            end_hr = ifelse(end_hr>12, paste(end_hr-12, 'pm'), paste(end_hr, 'am'))
+            caption = paste0('Note: "Out-of-hours" defined as the period outside ', 
+                             start_hr,' to ', end_hr, '.')
+        }
+      } #else {
+        # caption = NULL
+      # }
     }
     
     ## Facet vars

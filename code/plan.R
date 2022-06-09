@@ -670,8 +670,8 @@ prop_global_wend_pushes_ggsave = ggsave(
 prop_cities_both_events = prop_plot(
   merge(cities, lockdown_dates, by = 'location'),
   prop = 'both', measure = 'events',
-  bad_dates = bad_dates, 
-  min_year = 2017, 
+  bad_dates = bad_dates,
+  # min_year = 2017, 
   title = NULL,
   treat_date2 = 10, ## Global treatment date
   scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
@@ -679,14 +679,14 @@ prop_cities_both_events = prop_plot(
 prop_cities_both_events_ggsave = ggsave(
   here('figs/prop-cities-both-events.pdf'), 
   plot = prop_cities_both_events,
-  width = 8, height = 10, device = cairo_pdf
+  width = 10, height = 8, device = cairo_pdf
   ),
 
 ## ** Gender (prop = wend, measure = events) ----
 prop_gender_wend_events = prop_plot(
   merge(gender, lockdown_dates), 
   prop = 'wend', measure = 'events', 
-  bad_dates = bad_dates, min_year = 2017,
+  bad_dates = bad_dates, #min_year = 2017,
   treat_date2 = 10, ## Global treatment date
   by_gender = TRUE, 
   title = NULL,
@@ -695,14 +695,14 @@ prop_gender_wend_events = prop_plot(
 prop_gender_wend_events_ggsave = ggsave(
   here('figs/prop-gender-wend-events.pdf'), 
   plot = prop_gender_wend_events,
-  width = 8, height = 10, device = cairo_pdf
+  width = 10, height = 8, device = cairo_pdf
   ),
 
 ## ** Gender (prop = ohrs, measure = events) ----
 prop_gender_ohrs_events = prop_plot(
   merge(gender, lockdown_dates), 
   prop = 'ohrs', measure = 'events', 
-  bad_dates = bad_dates, min_year = 2017,
+  bad_dates = bad_dates, #min_year = 2017,
   treat_date2 = 10, ## Global treatment date
   by_gender = TRUE, 
   title = NULL,
@@ -711,7 +711,7 @@ prop_gender_ohrs_events = prop_plot(
 prop_gender_ohrs_events_ggsave = ggsave(
   here('figs/prop-gender-ohrs-events.pdf'), 
   plot = prop_gender_ohrs_events,
-  width = 8, height = 10, device = cairo_pdf
+  width = 10, height = 8, device = cairo_pdf
   ),
 
 ## ** Orgs ----
@@ -780,7 +780,7 @@ gender_prop = collapse_prop(
   # prop = 'ohrs',
   measure = 'both',
   bad_dates = setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage
-  min_year = 2017,
+  # min_year = 2017,
   by_gender = TRUE,
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
   )[, lockdown_global := 10 ## We'll actually use the 'Global' week 10 date as the common lockdown treatment
@@ -852,7 +852,7 @@ cities_prop = collapse_prop(
                                                       default = 'us')],
   measure = 'both',
   bad_dates =  setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage, 
-  min_year = 2017,
+  # min_year = 2017,
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
   ) %>%
   .[, lockdown_global := 10] %>% ## We'll actually use the 'Global' week 10 date as the common lockdown treatment 
