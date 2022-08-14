@@ -947,11 +947,19 @@ hols =
 
 prophet_co = rbindlist(lapply(
   split(countries_hi, countries_hi$country_code), 
-  function(x) prophet_fc(x, holidays = hols, level = 0.9, 
-                         seasonality.mode = 'multiplicative',
-                         outliers = c('2020-06-10', '2019-09-12', 
-                                      '2020-01-24', ## Only KR but enough of a pain that will remove for all
-                                      '2019-12-23', '2019-12-30', '2018-12-30'))
+  function(x) prophet_fc(
+    x, 
+    holidays = hols,
+    train_cutoff = '2020-01-31', # One month into 2020 as anchor
+    n.changepoints = 37, # One (potential) changepoint per month
+    seasonality.mode = 'multiplicative',
+    outliers = c(
+      '2020-06-10', '2019-09-12',
+      '2020-01-24', ## Only KR but enough of a pain that will remove for all
+      '2019-12-23', '2019-12-30', '2018-12-30'
+      ),
+    level = 0.9
+    )
   )),
 write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst')),
 
@@ -960,7 +968,7 @@ write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst')),
 
 ## Difference trends (default)
 prophet_co_plot = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01'
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01'
   ),
 prophet_co_plot_ggsave = ggsave(
   here('figs/prophet-countries.pdf'), 
@@ -977,7 +985,7 @@ prophet_co_plot_placebo_ggsave = ggsave(
   ),
 ## Difference percentage
 prophet_co_plot_perc = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01',
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01',
   type = 'diffperc'
 ),
 prophet_co_plot_perc_ggsave = ggsave(
@@ -987,7 +995,7 @@ prophet_co_plot_perc_ggsave = ggsave(
 ),
 ## Raw trends
 prophet_co_plot_raw = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01',
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01',
   type = 'raw'
   ),
 prophet_co_plot_raw_ggsave = ggsave(
@@ -996,7 +1004,7 @@ prophet_co_plot_raw_ggsave = ggsave(
   width = 16, height = 9, device = cairo_pdf
   ),
 prophet_co_plot_raw_placebo = prophet_plot(
-  prophet_co[ds>='2018-09-01' & ds<='2019-06-30'], #forecast = '2020-01-01'
+  prophet_co[ds>='2018-09-01' & ds<='2019-06-30'], #forecast = '2020-02-01'
   type = 'raw'
   ),
 prophet_co_plot_raw_placebo_ggsave = ggsave(
