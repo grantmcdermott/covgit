@@ -434,10 +434,6 @@ msft = rbindlist(lapply(
   }
 )),
 
-## Write to disk
-write_msft = write_fst(msft, here('data/msft.fst')),
-
-
 ## * Alibaba ----
 
 ## https://github.com/alibaba
@@ -451,10 +447,6 @@ baba = rbindlist(lapply(
       tz = 'Asia/Shanghai')
   }
 ))[, location := 'Beijing'], ## really, Hangzhou (but fine for Chinese lockdown matching)
-
-## Write to disk
-write_baba = write_fst(baba, here('data/baba.fst')),
-
 
 ## * UK Government Digital Service ----
 
@@ -471,9 +463,14 @@ agov = rbindlist(lapply(
   }
 ))[, location := 'London'],
 
-## Write to disk
-write_agov = write_fst(agov, here('data/agov.fst')),
-
+## * Combined orgs ----
+orgs = rbind(
+  merge(msft, lockdown_dates, by = 'location')[, location := 'Microsoft'],
+  merge(baba, lockdown_dates, by = 'location')[, location := 'Alibaba'],
+  merge(agov, lockdown_dates, by = 'location')[, location := 'UK government digital service'],
+  fill = TRUE
+  )[, c('users_tab', 'country_code', 'comment') := NULL],
+write_orgs = write_fst(orgs, here('data/orgs.fst')),
 
 # Hobbyists ----------------------------------------------------------------
 
@@ -496,10 +493,6 @@ hasst = rbindlist(lapply(
   }
 ))[, location := 'Home Assistant'],
 
-## Write to disk
-write_hasst = write_fst(hasst, here('data/hasst.fst')),
-
-
 ## * KiCad ----
 
 # https://github.com/KiCad
@@ -513,9 +506,6 @@ kicad = rbindlist(lapply(
       )
   }
 ))[, location := 'KiCad'],
-
-## Write to disk
-write_kicad = write_fst(kicad, here('data/kicad.fst')),
 
 ## * Combined hobbyists ----
 hobbyists = rbind(hasst, kicad)[, lockdown := as.IDate('2020-03-02')],
@@ -763,54 +753,20 @@ prop_gender_ohrs_events_ggsave = ggsave(
 
 ## ** Orgs ----
 
-## Microsoft
-prop_msft = prop_plot(
-  merge(msft, lockdown_dates, by = 'location')[
-    , location := 'Microsoft'],
+prop_orgs = prop_plot(
+  orgs,
   prop = 'both', measure = 'events',
   bad_dates = bad_dates, 
-  # treat_date2 = 10, 
   title = NULL,
-  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
+  scales = 'free_y', 
+  ncol = 2, 
+  labeller = labeller(.multi_line=FALSE)
   ),
-prop_msft_ggsave = ggsave(
-  here('figs/prop-msft.pdf'), 
-  plot = prop_msft,
-  width = 8, height = 5, device = cairo_pdf
+prop_orgs_ggsave = ggsave(
+  here('figs/prop-orgs.pdf'), 
+  plot = prop_orgs,
+  width = 6.4, height = 8, device = cairo_pdf
   ),
-
-## Alibaba
-prop_baba = prop_plot(
-  merge(baba, lockdown_dates, by = 'location')[
-    , location := 'Alibaba'],
-  prop = 'both', measure = 'events',
-  bad_dates = bad_dates, 
-  # treat_date2 = 10,
-  title = NULL,
-  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-  ),
-prop_baba_ggsave = ggsave(
-  here('figs/prop-baba.pdf'), 
-  plot = prop_baba,
-  width = 8, height = 5, device = cairo_pdf
-  ),
-
-## UK AlphaGov
-prop_agov = prop_plot(
-  merge(agov, lockdown_dates, by = 'location')[
-    , location := 'UK government digital service'],
-  prop = 'both', measure = 'events',
-  bad_dates = bad_dates, 
-  treat_date2 = isoweek(as.IDate(c('2020-06-01', '2020-06-15', '2020-06-23'))), 
-  title = NULL,
-  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-  ),
-prop_agov_ggsave = ggsave(
-  here('figs/prop-agov.pdf'), 
-  plot = prop_agov,
-  width = 8, height = 5, device = cairo_pdf
-  ),
-
 
 ## ** Hobbyists ----
 
