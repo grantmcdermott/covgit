@@ -456,7 +456,7 @@ baba = rbindlist(lapply(
 write_baba = write_fst(baba, here('data/baba.fst')),
 
 
-## UK Government Digital Service ----
+## * UK Government Digital Service ----
 
 ## https://github.com/alphagov
 agov = rbindlist(lapply(
@@ -473,6 +473,53 @@ agov = rbindlist(lapply(
 
 ## Write to disk
 write_agov = write_fst(agov, here('data/agov.fst')),
+
+
+# Hobbyists ----------------------------------------------------------------
+
+## Note: These are intended to be used as case-studies in the SM. I'll manually
+## specify the lockdown date as the start of week 10 (2 Mar) to make plotting
+## easier for the joined dataset further below.
+
+## * Home Assistant ----
+
+# https://github.com/home-assistant
+hasst = rbindlist(lapply(
+  2017:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y, 
+      hourly = TRUE,
+      org_ids = c(hasst = 13844975),
+      tz = 'America/New_York' # founder / lead dev is based in brooklyn
+      )
+  }
+))[, location := 'Home Assistant'],
+
+## Write to disk
+write_hasst = write_fst(hasst, here('data/hasst.fst')),
+
+
+## * KiCad ----
+
+# https://github.com/KiCad
+kicad = rbindlist(lapply(
+  2017:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y, 
+      hourly = TRUE,
+      org_ids = c(kicad = 3374914)
+      )
+  }
+))[, location := 'KiCad'],
+
+## Write to disk
+write_kicad = write_fst(kicad, here('data/kicad.fst')),
+
+## * Combined hobbyists ----
+hobbyists = rbind(hasst, kicad)[, lockdown := as.IDate('2020-03-02')],
+write_hobbyists = write_fst(hobbyists, here('data/hobbyists.fst')),
 
 
 # Plots -------------------------------------------------------------------  
@@ -762,6 +809,24 @@ prop_agov_ggsave = ggsave(
   here('figs/prop-agov.pdf'), 
   plot = prop_agov,
   width = 8, height = 5, device = cairo_pdf
+  ),
+
+
+## ** Hobbyists ----
+
+prop_hobbyists = prop_plot(
+  hobbyists,
+  prop = 'both', measure = 'events',
+  bad_dates = bad_dates, 
+  title = NULL,
+  scales = 'free_y', 
+  ncol = 2, 
+  labeller = labeller(.multi_line=FALSE)
+  ),
+prop_hobbyists_ggsave = ggsave(
+  here('figs/prop-hobbyists.pdf'), 
+  plot = prop_hobbyists,
+  width = 8, height = 10, device = cairo_pdf
   ),
 
 
