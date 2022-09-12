@@ -1,7 +1,9 @@
-# Analysis of COVID-19's effect on GitHub activity
+# Labor reallocation and remote work 
 
-To reproduce all of the results, clone this repo and then follow these three
-steps:
+This repository contains code and data for [McDermott and Hansen (2021)](https://www.nber.org/papers/w29598).
+
+To reproduce all of the results in the paper, clone this repo and then follow 
+these three steps:
 
 ### Step 0: Google Cloud API Credentials
 
