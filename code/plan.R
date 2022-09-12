@@ -742,7 +742,7 @@ prop_orgs = prop_plot(
 prop_orgs_ggsave = ggsave(
   here('figs/prop-orgs.pdf'), 
   plot = prop_orgs,
-  width = 6.4, height = 8, device = cairo_pdf
+  width = 8, height = 6.4, device = cairo_pdf
   ),
 
 ## ** Hobbyists ----
@@ -759,7 +759,7 @@ prop_hobbyists = prop_plot(
 prop_hobbyists_ggsave = ggsave(
   here('figs/prop-hobbyists.pdf'), 
   plot = prop_hobbyists,
-  width = 8, height = 6, device = cairo_pdf
+  width = 8, height = 6.4, device = cairo_pdf
   ),
 
 
