@@ -360,30 +360,7 @@ write_sea = write_fst(sea, here('data/sea.fst')),
 
 # ** Seattle (linkedin matched) -------------------------------------------
 
-## Same as the above, but this time limited to the group of users who: 
-## (a) were active during January 2019, and (b) were matched against a 
-## LinkedIn profile. Allows us to isolate intensive margin, as well as 
-## categorise by age and gender.
-sea_linkedin = rbindlist(lapply(
-  2017:2020, function(y) {
-    get_gh_activity_year(
-      billing = billing, year = y,
-      hourly = TRUE,
-      location_add = 'Seattle, WA (LinkedIn)', # city = 'Seattle', state = 'WA',
-      tz = 'America/Los_Angeles',
-      users_tab = 'mcd-lab.covgit.sea_users_linkedin',
-      gender = TRUE, age_buckets = c(30, 40, 50)
-      )
-    }
-  )),
-
-## Write to disk
-write_sea_linkedin = write_fst(sea_linkedin, here('data/sea-linkedin.fst')),
-
-# ** Seattle (gender matched) ---------------------------------------------
-
-## Similar to the above, except this time matched to gender for all Seattle
-## users (not just those with an identifiable LinkedIn profile)
+## Same as the above, but this time matched by (statistically-imputed) gender
 sea_gender = rbindlist(lapply(
   2017:2020, function(y) {
     get_gh_activity_year(
@@ -840,8 +817,8 @@ es_gender_plot = ggiplot(
   facet_args = list(labeller = labeller(.multi_line=FALSE)),
   theme = theme_es
   ) +
-scale_color_discrete_qualitative(palette = "Harmonic", aesthetics = c('colour', 'fill')) +
-labs(caption = 'Note: "Out-of-hours" defined as the period outside of 9 am to 6 pm.'),
+  scale_color_discrete_qualitative(palette = "Harmonic", aesthetics = c('colour', 'fill')) +
+  labs(caption = 'Note: "Out-of-hours" defined as the period outside of 9 am to 6 pm.'),
 es_gender_plot_save = ggsave(
   here('figs/es-gender-events.pdf'), 
   plot = es_gender_plot,
