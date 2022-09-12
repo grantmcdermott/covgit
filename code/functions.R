@@ -762,6 +762,7 @@ collapse_prop =
            work_hours = 9:18, excl_wends = FALSE, ## ohrs-specific args
            measure = c('both', 'events', 'users'), 
            by_gender = FALSE, 
+           by_age = FALSE,
            simp_loc = TRUE,
            treatment_window = NULL,
            min_year = NULL,
@@ -830,6 +831,7 @@ collapse_prop =
     gvars = c('location', 'yr', 'wk', 'prop', 'prop_val', 'lockdown', 'lockdown_yr')
     if ('country_code' %in% names(d)) gvars = c('country_code', gvars)
     if (by_gender) gvars = c(gvars, 'gender')
+    if (by_age) gvars = c(gvars, 'age')
     gvars2 = setdiff(gvars, c('prop_val'))
     
     setkeyv(d, gvars)
@@ -896,13 +898,14 @@ prop_plot =
            work_hours = 9:18,
            measure = c('both', 'events', 'users'), 
            by_gender = FALSE,
+           by_age = FALSE,
            simp_loc = TRUE,
            highlight_year = NULL, highlight_col = NULL, 
            ylim = NULL,
            start_week = 2, end_week = 50, 
            treat_date = NULL, treat_date2 = NULL,
            drop_bdates = TRUE,
-           title = 'auto', facet_title = 'auto', caption = 'auto',
+           title = 'auto', facet_title = 'auto', caption = NULL,
            scales = NULL, ncol = NULL, 
            labeller = 'label_value',
            ...) {
@@ -918,6 +921,7 @@ prop_plot =
                          measure = measure, 
                          work_hours = work_hours,
                          by_gender = by_gender, 
+                         by_age = by_age,
                          simp_loc = simp_loc,
                          start_week = start_week, end_week = end_week,
                          ...)
@@ -925,21 +929,25 @@ prop_plot =
     if (drop_bdates) {
       if ('bdates_wend' %in% names(data)) {
         data = data[bdates_wend==0 & bdates_wk==0]
-        # data[bdates_wend!=0, (mcols) := NA][bdates_wk!=0, (mcols) := NA]
       }
     }
-
+    
     if (is.null(highlight_year)) highlight_year = 2020
     highlight_year = paste0(highlight_year)
     if (is.null(highlight_col)) highlight_col = '#E16A86'
+    if (length(highlight_col)!=length(highlight_year)) {
+      highlight_col = lighten(highlight_col, .5/length(highlight_year)*c(1,-1))
+    }
     
     col_vals = highlight_col
     names(col_vals) = highlight_year
     col_vals = c('Recent years' = '#A4DDEF', 'Recent mean' = '#00A6CA', col_vals)
-    lwd_vals = c(0.4, 0.7, 0.7); names(lwd_vals) = names(col_vals)
+    lwd_vals = c(0.4, 0.7, rep(0.7, length(highlight_year))); names(lwd_vals) = names(col_vals)
     
     gvars = c('location', 'prop', 'yr', 'wk')
     if (by_gender) gvars = c(gvars, 'gender')
+    if (by_age) gvars = c(gvars, 'age')
+    
     
     if (is.null(treat_date)) {
       treat_dates = data[, .(treat_date = first(lockdown)), by = location]
@@ -947,11 +955,11 @@ prop_plot =
     
     data = melt(data, measure = mcols)
     
-    data_nhy_mean = data[yr!=highlight_year, 
+    data_nhy_mean = data[yr %ni% highlight_year,
                          .(value = mean(value), yr = first(yr)), 
                          by = setdiff(c(gvars, 'variable'), 'yr')]
     
-    data[, col_grp := fifelse(yr==highlight_year, highlight_year, 'Recent years')]
+    data[, col_grp := fifelse(yr %in% highlight_year, paste(yr), 'Recent years')]
     data_nhy_mean[, col_grp := 'Recent mean']
     
     title_auto = title ## for title adjustment along with facet vars below
@@ -964,23 +972,26 @@ prop_plot =
         title = 'Proportion of activity outside normal office hours'
       }
     }
-    if (caption=='auto') {
-      if (prop %in% c('both', 'ohrs')) {
-        start_hr = head(work_hours, 1)
-        start_hr = ifelse(start_hr>12, paste(start_hr-12, 'pm'), paste(start_hr, 'am'))
-        end_hr = tail(work_hours, 1)
-        end_hr = ifelse(end_hr>12, paste(end_hr-12, 'pm'), paste(end_hr, 'am'))
-        caption = paste0('Note: "Out-of-hours" defined as the period outside ', 
-                         start_hr,' to ', end_hr, '.')
-      } else {
-        caption = NULL
-      }
+    if (!is.null(caption)) {
+      if (caption=='auto') {
+        if (prop %in% c('both', 'ohrs')) {
+            start_hr = head(work_hours, 1)
+            start_hr = ifelse(start_hr>12, paste(start_hr-12, 'pm'), paste(start_hr, 'am'))
+            end_hr = tail(work_hours, 1)
+            end_hr = ifelse(end_hr>12, paste(end_hr-12, 'pm'), paste(end_hr, 'am'))
+            caption = paste0('Note: "Out-of-hours" defined as the period outside ', 
+                             start_hr,' to ', end_hr, '.')
+        }
+      } #else {
+        # caption = NULL
+      # }
     }
     
     ## Facet vars
     facet_vars = vars(location)
     if (prop=='both') facet_vars = c(facet_vars, vars(prop))
     if (length(mcols)==2) facet_vars = c(facet_vars, vars(stringr::str_to_title(variable)))
+    if (by_age) facet_vars = c(facet_vars, vars(age))
     if (by_gender) facet_vars = c(facet_vars, vars(gender))
     
     # Extra title adjustment
@@ -1012,7 +1023,7 @@ prop_plot =
       ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, lwd = col_grp)) + 
       geom_line() + 
       geom_line(data = data_nhy_mean) +
-      geom_line(data = data[yr==highlight_year]) +
+      geom_line(data = data[yr %in% highlight_year]) +
       {
         if (!is.null(treat_date)) {
           geom_vline(xintercept = treat_date, col = 'grey50', lty = 2) 
@@ -1030,7 +1041,6 @@ prop_plot =
       scale_colour_manual(values = col_vals) +
       scale_size_manual(values = lwd_vals) +
       facet_wrap(facet_vars, scales = scales, ncol = ncol, labeller = labeller) +
-      # theme(legend.position = 'bottom', legend.title = element_blank()) +
       {
         if (!is.null(ylim)) {
           geom_rangeframe(data = data.frame(x = xrange, y = yrange), 
@@ -1057,7 +1067,8 @@ prophet_fc =
            ycol = c('events', 'users'),
            train_cutoff = '2019-12-31',
            outliers = NULL,
-           level = 0.8) {
+           level = 0.8,
+           ...) {
     
     ycol = match.arg(ycol)
     
@@ -1077,7 +1088,8 @@ prophet_fc =
         holidays = holidays,
         yearly.seasonality = TRUE,
         daily.seasonality = FALSE,
-        interval.width = level
+        interval.width = level,
+        ...
       )
     
     fc = predict(mod, pred_dt, holidays = holidays)
@@ -1174,4 +1186,35 @@ prophet_plot =
       gg + scale_y_continuous(labels = function(x) x/1e3)
     }
     
+  }
+
+
+# Hourly plot -------------------------------------------------------------
+
+## Expects the 'cities' data and returns average hourly data for the first six 
+## months of each year for a given city (i.e. the sole function argument).
+## Useful for getting a finer sense of how the distribution of a city's workday
+## has changed, including vanishing lunchbreaks.
+hourly_plot = 
+  function(dat = cities, show_title = TRUE) {
+    dat[month(date) %in% 1:6, 
+           .(events = mean(events)), 
+           by = .(location, hr, mnth = month(date), yr = year(date))
+    ][, 
+      Treated := mnth>=3 & yr>=2020
+    ][location=="Beijing", 
+      Treated := mnth>=2 & yr>=2020
+    ] |> 
+      ggplot(aes(x = hr, y = events, fill = Treated)) + 
+      geom_col() + 
+      ## Below looks nice, but better to match colour palette of prob plots...
+      # scale_fill_discrete_qualitative(palette = "Harmonic") +
+      scale_fill_manual(values = c('FALSE' = '#A4DDEF',
+                                   'TRUE' = '#E16A86')) +
+      labs(x = "Hour", y = "Mean number of events") +
+      { if (show_title) labs(title = gsub(",.*", "", unique(dat$location))) } +
+      facet_grid(yr ~ factor(month.abb[mnth], levels = month.abb)) +
+      theme(legend.position = "none", 
+            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.spacing = unit(0.5, "char"))
   }

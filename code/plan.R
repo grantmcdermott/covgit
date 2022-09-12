@@ -9,7 +9,10 @@ bad_dates = as.IDate(c('2015-02-01',
                        '2018-04-03', 
                        '2019-09-12',
                        '2020-06-10',
-                       '2020-08-21')),
+                       '2020-08-21',
+                       '2021-03-09', '2021-03-10',
+                       '2021-05-07', '2021-05-08', '2021-05-09', '2021-05-10', '2021-05-11',
+                       '2021-08-26', '2021-08-27')),
 
 lockdown_dates = fread(here('data/lockdown-dates.csv'))[, .SD[1], by = location],
 
@@ -23,12 +26,15 @@ holidays = rbindlist(lapply(
 
 # Global ------------------------------------------------------------------
 
-## Get 2015--2020 global activity data
+## Get 2015--2021 global activity data, taking account of the fact that GH
+## Archive tarballs weren't generated correctly around October 2021. See:
+## https://github.com/igrigorik/gharchive.org/issues/259
 g = rbindlist(lapply(
-  2015:2020, function(y) {
+  2015:2021, function(y) {
     get_gh_activity_year(billing = billing, year = y)
     }
-  )),
+  ))[year(date)==2021 & isoweek(date) %in% 40:43, ## NB: GitHub Archive glitch
+     c('events', 'users') := NA],
 
 ## Write to disk
 write_global = write_fst(g, here('data/global.fst')),
@@ -36,21 +42,35 @@ write_global = write_fst(g, here('data/global.fst')),
 
 ## As above, but just push events
 gpush = rbindlist(lapply(
-  2015:2020, function(y) {
+  2015:2021, function(y) {
     get_gh_activity_year(billing = billing, year = y, event_type = 'Push')
-  }
-)),
+    }
+  ))[year(date)==2021 & isoweek(date) %in% 40:43, ## NB: GitHub Archive glitch
+     c('events', 'users') := NA],
 
 ## Write to disk
 write_global_push = write_fst(gpush, here('data/global-push-events.fst')),
 
+
+## NOTE! We only have geo/location information for users (from GH Torrent) going 
+## back until 2017 and up to the end of 2019. Hence, we'll limit all queries
+## that require a location-based field to 2017-2020 from here on out.
+
 # All countries separately ------------------------------------------------
 
-## Get 2015--2020 activity data for all countries
-countries = rbindlist(lapply(
-  2015:2020, function(y) {
-    get_gh_activity_year(billing = billing, year = y, by_country = TRUE)
-    }
+## Get 2017--2020 activity data for all countries
+countries = rbindlist(Map(
+  function(y, u) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y,
+      users_tab = u,
+      by_country = TRUE
+      )
+    },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
   ))[!is.na(country_code), location := country_code][order(country_code, date)],
 
 ## Write to disk
@@ -70,16 +90,21 @@ write_countries = write_fst(countries, here('data/countries.fst')),
 
 countries_hi = rbindlist(Map(
   function(country_code, country_name, tz, user_rank) {
-    rbindlist(lapply(
-      2017:2020, function(y) {
+    rbindlist(Map(
+      function(y, u) {
         get_gh_activity_year(
-          billing = billing, year = y, 
+          billing = billing, 
+          year = y,
+          users_tab = u,
           country_code = country_code,
           geo_ringer = "EXTRACT(YEAR from DATETIME(created_at)) <= 2016",
           tz = tz)
-      }
-    ))[, ':=' (location = country_name, user_rank = user_rank)]
-  },
+        },
+      y = 2017:2020,
+      u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+            rep("ghtorrentmysql1906.MySQL1906.users", 2))
+      ))[, ':=' (location = country_name, user_rank = user_rank)]
+    },
   country_code = c('us', 'cn', 'de', 
                    'gb', 'fr', 'in', 
                    'br', 'jp', 'se',
@@ -96,7 +121,7 @@ countries_hi = rbindlist(Map(
                    4, 5, 7, 
                    9, 10, 16,
                    18, 19, 40)
-)),
+  )),
 
 ## Write to disk
 write_countries_hi = write_fst(countries_hi, here('data/countries-hi.fst')),
@@ -119,16 +144,21 @@ write_countries_hi = write_fst(countries_hi, here('data/countries-hi.fst')),
 
 # * London ----------------------------------------------------------------
 
-## Get 2015--2020 (hourly) LON data
-lon = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) LON data
+lon = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y, 
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'London', geo_ringer = "country_code!='ca'",
       tz = 'Europe/London'
     )
-    }
+  },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
   )),
 
 ## Write to disk
@@ -138,7 +168,7 @@ write_lon = write_fst(lon, here('data/lon.fst')),
 # ** London (gender matched) ----------------------------------------------
 
 lon_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -146,25 +176,30 @@ lon_gender = rbindlist(lapply(
       tz = 'Europe/London',
       users_tab = 'mcd-lab.covgit.lon_users_gender_matched', 
       gender = TRUE
-    )
-  }
-)),
+      )
+    }
+  )),
 
 ## Write to disk
 write_lon_gender = write_fst(lon_gender, here('data/lon-gender.fst')),
 
 # * New York --------------------------------------------------------------
 
-## Get 2015--2020 (hourly) NYC data
-nyc = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) NYC data
+nyc = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y,
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'New York', state = 'NY',
       tz = 'America/New_York'
     )
-    }
+  },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
   )),
 
 ## Write to disk
@@ -175,33 +210,38 @@ write_nyc = write_fst(nyc, here('data/nyc.fst')),
 ## Same as per the above, except this time matched to gender for as many users
 ## as possible
 nyc_gender = rbindlist(lapply(
-2015:2020, function(y) {
-get_gh_activity_year(
-  billing = billing, year = y,
-  hourly = TRUE,
-  location_add = 'New York, NY (gender)',
-  tz = 'America/New_York',
-  users_tab = 'mcd-lab.covgit.nyc_users_gender_matched', 
-  gender = TRUE
-)
-}
-)),
-
+  2017:2020, function(y) {
+    get_gh_activity_year(
+    billing = billing, year = y,
+    hourly = TRUE,
+    location_add = 'New York, NY (gender)',
+    tz = 'America/New_York',
+    users_tab = 'mcd-lab.covgit.nyc_users_gender_matched', 
+    gender = TRUE
+    )
+  }
+  )),
+  
 ## Write to disk
 write_nyc_gender = write_fst(nyc_gender, here('data/nyc-gender.fst')),
 
 # * San Francisco ----------------------------------------------------------
 
-## Get 2015--2020 (hourly) San Francisco data
-sfo = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) San Francisco data
+sfo = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y,
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'San Francisco', state = 'CA',
       tz = 'America/Los_Angeles'
     )
-    }
+  },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
   )),
 
 ## Write to disk
@@ -212,7 +252,7 @@ write_sfo = write_fst(sfo, here('data/sfo.fst')),
 ## Same as per the above, except this time matched to gender for as many users
 ## as possible
 sfo_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -220,26 +260,32 @@ sfo_gender = rbindlist(lapply(
       tz = 'America/Los_Angeles',
       users_tab = 'mcd-lab.covgit.sfo_users_gender_matched', 
       gender = TRUE
-    )
-  }
-)),
+      )
+    }
+  )),
+
 
 ## Write to disk
 write_sfo_gender = write_fst(sfo_gender, here('data/sfo-gender.fst')),
 
 # * Beijing ---------------------------------------------------------------
 
-## Get 2015--2020 (hourly) BEI data
-bei = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) BEI data
+bei = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y, 
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'Beijing',
       tz = 'Asia/Shanghai'
-    )
-  }
-)),
+      )
+    },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+  )),
 
 ## Write to disk
 write_bei = write_fst(bei, here('data/bei.fst')),
@@ -247,17 +293,22 @@ write_bei = write_fst(bei, here('data/bei.fst')),
 
 # * Bengaluru (Bangalore) -------------------------------------------------
 
-## Get 2015--2020 (hourly) BLR data
-blr = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) BLR data
+blr = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y, 
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'Bengaluru', city_alias = 'Bangalore',
       tz = 'Asia/Kolkata'
-    )
-  }
-)),
+      )
+    },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+  )),
 
 ## Write to disk
 write_blr = write_fst(blr, here('data/blr.fst')),
@@ -266,7 +317,7 @@ write_blr = write_fst(blr, here('data/blr.fst')),
 # ** Bengalru (gender matched) --------------------------------------------
 
 blr_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -276,7 +327,8 @@ blr_gender = rbindlist(lapply(
       gender = TRUE
     )
   }
-)),
+  )),
+
 
 ## Write to disk
 write_blr_gender = write_fst(blr_gender, here('data/blr-gender.fst')),
@@ -284,18 +336,23 @@ write_blr_gender = write_fst(blr_gender, here('data/blr-gender.fst')),
 
 # * Seattle ---------------------------------------------------------------
 
-## Get 2015--2020 (hourly) Seattle data
-sea = rbindlist(lapply(
-  2015:2020, function(y) {
+## Get 2017--2020 (hourly) Seattle data
+sea = rbindlist(Map(
+  function(y, u) {
     get_gh_activity_year(
-      billing = billing, year = y,
+      billing = billing, 
+      year = y,
+      users_tab = u,
       hourly = TRUE,
       city = 'Seattle', city_alias = 'Redmond',
       state = 'WA', geo_ringer = "state!='OR'",
       tz = 'America/Los_Angeles'
-    )
-  }
-)),
+      )
+    },
+  y = 2017:2020,
+  u = c(paste0("ghtorrent-bq.ght_", 2017:2018, "_04_01.users"), 
+        rep("ghtorrentmysql1906.MySQL1906.users", 2))
+  )),
 
 ## Write to disk
 write_sea = write_fst(sea, here('data/sea.fst')),
@@ -303,32 +360,9 @@ write_sea = write_fst(sea, here('data/sea.fst')),
 
 # ** Seattle (linkedin matched) -------------------------------------------
 
-## Same as the above, but this time limited to the group of users who: 
-## (a) were active during January 2019, and (b) were matched against a 
-## LinkedIn profile. Allows us to isolate intensive margin, as well as 
-## categorise by age and gender.
-sea_linkedin = rbindlist(lapply(
-  2015:2020, function(y) {
-    get_gh_activity_year(
-      billing = billing, year = y,
-      hourly = TRUE,
-      location_add = 'Seattle, WA (LinkedIn)', # city = 'Seattle', state = 'WA',
-      tz = 'America/Los_Angeles',
-      users_tab = 'mcd-lab.covgit.sea_users_linkedin',
-      gender = TRUE, age_buckets = c(30, 40, 50)
-    )
-  }
-)),
-
-## Write to disk
-write_sea_linkedin = write_fst(sea_linkedin, here('data/sea-linkedin.fst')),
-
-# ** Seattle (gender matched) ---------------------------------------------
-
-## Similar to the above, except this time matched to gender for all Seattle
-## users (not just those with an identifiable LinkedIn profile)
+## Same as the above, but this time matched by (statistically-imputed) gender
 sea_gender = rbindlist(lapply(
-  2015:2020, function(y) {
+  2017:2020, function(y) {
     get_gh_activity_year(
       billing = billing, year = y,
       hourly = TRUE,
@@ -377,10 +411,6 @@ msft = rbindlist(lapply(
   }
 )),
 
-## Write to disk
-write_msft = write_fst(msft, here('data/msft.fst')),
-
-
 ## * Alibaba ----
 
 ## https://github.com/alibaba
@@ -395,11 +425,7 @@ baba = rbindlist(lapply(
   }
 ))[, location := 'Beijing'], ## really, Hangzhou (but fine for Chinese lockdown matching)
 
-## Write to disk
-write_baba = write_fst(baba, here('data/baba.fst')),
-
-
-## UK Government Digital Service ----
+## * UK Government Digital Service ----
 
 ## https://github.com/alphagov
 agov = rbindlist(lapply(
@@ -414,8 +440,53 @@ agov = rbindlist(lapply(
   }
 ))[, location := 'London'],
 
-## Write to disk
-write_agov = write_fst(agov, here('data/agov.fst')),
+## * Combined orgs ----
+orgs = rbind(
+  merge(msft, lockdown_dates, by = 'location')[, location := 'Microsoft'],
+  merge(baba, lockdown_dates, by = 'location')[, location := 'Alibaba'],
+  merge(agov, lockdown_dates, by = 'location')[, location := 'UK government digital service'],
+  fill = TRUE
+  )[, c('users_tab', 'country_code', 'comment') := NULL],
+write_orgs = write_fst(orgs, here('data/orgs.fst')),
+
+# Hobbyists ----------------------------------------------------------------
+
+## Note: These are intended to be used as case-studies in the SM. I'll manually
+## specify the lockdown date as the start of week 10 (2 Mar) to make plotting
+## easier for the joined dataset further below.
+
+## * Home Assistant ----
+
+# https://github.com/home-assistant
+hasst = rbindlist(lapply(
+  2017:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y, 
+      hourly = TRUE,
+      org_ids = c(hasst = 13844975),
+      tz = 'America/New_York' # founder / lead dev is based in brooklyn
+      )
+  }
+))[, location := 'Home Assistant'],
+
+## * KiCad ----
+
+# https://github.com/KiCad
+kicad = rbindlist(lapply(
+  2017:2020, function(y) {
+    get_gh_activity_year(
+      billing = billing, 
+      year = y, 
+      hourly = TRUE,
+      org_ids = c(kicad = 3374914)
+      )
+  }
+))[, location := 'KiCad'],
+
+## * Combined hobbyists ----
+hobbyists = rbind(hasst, kicad)[, lockdown := as.IDate('2020-03-02')],
+write_hobbyists = write_fst(hobbyists, here('data/hobbyists.fst')),
 
 
 # Plots -------------------------------------------------------------------  
@@ -508,6 +579,39 @@ ts_countries_productivity_2_ggsave = ggsave(
 ),
 
 
+# * Hourly plots (cities) -------------------------------------------------
+
+hourly_plot_lon = hourly_plot(cities[location=="London"]),
+hourly_plot_lon_ggsave = ggsave(here("figs/hourly-lon.pdf"),
+                                plot = hourly_plot_lon,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_nyc = hourly_plot(cities[location=="New York, NY"]),
+hourly_plot_nyc_ggsave = ggsave(here("figs/hourly-nyc.pdf"),
+                                plot = hourly_plot_nyc,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_sfo = hourly_plot(cities[location=="San Francisco, CA"]),
+hourly_plot_sfo_ggsave = ggsave(here("figs/hourly-sfo.pdf"),
+                                plot = hourly_plot_sfo,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_bei = hourly_plot(cities[location=="Beijing"]),
+hourly_plot_bei_ggsave = ggsave(here("figs/hourly-bei.pdf"),
+                                plot = hourly_plot_bei,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_blr = hourly_plot(cities[location=="Bengaluru"]),
+hourly_plot_blr_ggsave = ggsave(here("figs/hourly-blr.pdf"),
+                                plot = hourly_plot_blr,
+                                width = 8, height = 5, device = cairo_pdf),
+
+hourly_plot_sea = hourly_plot(cities[location=="Seattle, WA"]),
+hourly_plot_sea_ggsave = ggsave(here("figs/hourly-sea.pdf"),
+                                plot = hourly_plot_sea,
+                                width = 8, height = 5, device = cairo_pdf),
+
+
 # * Proportion plots ------------------------------------------------------
 
 ## ** Global (prop = weekends, measure = both) ----
@@ -515,6 +619,7 @@ prop_global_wend = prop_plot(
   merge(g, lockdown_dates),
   prop = 'wend', measure = 'both',
   bad_dates = bad_dates,
+  highlight_year = 2020:2021,
   treat_date2 = 10, ## Global treatment date
   ylim = c(0.15, 0.25),
   scales = 'free_y',
@@ -527,7 +632,7 @@ prop_global_wend_ggsave = ggsave(
   ),
 ## ** Global (prop = weekends, measure = events) ----
 prop_global_wend_events = prop_plot(
-  merge(g, lockdown_dates),
+  merge(g[year(date)!=2021], lockdown_dates), ## For main text we exclude 2021 data
   prop = 'wend', measure = 'events',
   bad_dates = bad_dates,
   treat_date2 = 10, ## Global treatment date
@@ -541,9 +646,25 @@ prop_global_wend_events_ggsave = ggsave(
   plot = prop_global_wend_events,
   width = 8, height = 5, device = cairo_pdf
   ),
+prop_global_wend_events21 = prop_plot(
+  merge(g, lockdown_dates), 
+  prop = 'wend', measure = 'events',
+  bad_dates = bad_dates,
+  highlight_year = 2020:2021,
+  treat_date2 = 10, ## Global treatment date
+  ylim = c(0.15, 0.25),
+  title = NULL, facet_title = NULL,
+  scales = 'free_y',
+  labeller = labeller(.multi_line=FALSE)
+  ),
+prop_global_wend_events21_ggsave = ggsave(
+  here('figs/prop-global-wend-events21.pdf'), 
+  plot = prop_global_wend_events21,
+  width = 8, height = 5, device = cairo_pdf
+  ),
 ## ** Global (prop = weekends, measure = push events) ----
 prop_global_wend_pushes = prop_plot(
-  merge(gpush, lockdown_dates),
+  merge(gpush[year(date)!=2021], lockdown_dates),
   prop = 'wend', measure = 'events',
   bad_dates = bad_dates,
   treat_date2 = 10, ## Global treatment date
@@ -563,8 +684,8 @@ prop_global_wend_pushes_ggsave = ggsave(
 prop_cities_both_events = prop_plot(
   merge(cities, lockdown_dates, by = 'location'),
   prop = 'both', measure = 'events',
-  bad_dates = bad_dates, 
-  min_year = 2017, 
+  bad_dates = bad_dates,
+  # min_year = 2017, 
   title = NULL,
   treat_date2 = 10, ## Global treatment date
   scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
@@ -572,14 +693,14 @@ prop_cities_both_events = prop_plot(
 prop_cities_both_events_ggsave = ggsave(
   here('figs/prop-cities-both-events.pdf'), 
   plot = prop_cities_both_events,
-  width = 8, height = 10, device = cairo_pdf
+  width = 10, height = 8, device = cairo_pdf
   ),
 
 ## ** Gender (prop = wend, measure = events) ----
 prop_gender_wend_events = prop_plot(
   merge(gender, lockdown_dates), 
   prop = 'wend', measure = 'events', 
-  bad_dates = bad_dates, min_year = 2017,
+  bad_dates = bad_dates, #min_year = 2017,
   treat_date2 = 10, ## Global treatment date
   by_gender = TRUE, 
   title = NULL,
@@ -588,14 +709,14 @@ prop_gender_wend_events = prop_plot(
 prop_gender_wend_events_ggsave = ggsave(
   here('figs/prop-gender-wend-events.pdf'), 
   plot = prop_gender_wend_events,
-  width = 8, height = 10, device = cairo_pdf
+  width = 10, height = 8, device = cairo_pdf
   ),
 
 ## ** Gender (prop = ohrs, measure = events) ----
 prop_gender_ohrs_events = prop_plot(
   merge(gender, lockdown_dates), 
   prop = 'ohrs', measure = 'events', 
-  bad_dates = bad_dates, min_year = 2017,
+  bad_dates = bad_dates, #min_year = 2017,
   treat_date2 = 10, ## Global treatment date
   by_gender = TRUE, 
   title = NULL,
@@ -604,58 +725,43 @@ prop_gender_ohrs_events = prop_plot(
 prop_gender_ohrs_events_ggsave = ggsave(
   here('figs/prop-gender-ohrs-events.pdf'), 
   plot = prop_gender_ohrs_events,
-  width = 8, height = 10, device = cairo_pdf
+  width = 10, height = 8, device = cairo_pdf
   ),
 
 ## ** Orgs ----
 
-## Microsoft
-prop_msft = prop_plot(
-  merge(msft, lockdown_dates, by = 'location')[
-    , location := 'Microsoft'],
+prop_orgs = prop_plot(
+  orgs,
   prop = 'both', measure = 'events',
   bad_dates = bad_dates, 
-  # treat_date2 = 10, 
   title = NULL,
-  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
+  scales = 'free_y', 
+  ncol = 2, 
+  labeller = labeller(.multi_line=FALSE)
   ),
-prop_msft_ggsave = ggsave(
-  here('figs/prop-msft.pdf'), 
-  plot = prop_msft,
-  width = 8, height = 5, device = cairo_pdf
+prop_orgs_ggsave = ggsave(
+  here('figs/prop-orgs.pdf'), 
+  plot = prop_orgs,
+  width = 8, height = 6.4, device = cairo_pdf
   ),
 
-## Alibaba
-prop_baba = prop_plot(
-  merge(baba, lockdown_dates, by = 'location')[
-    , location := 'Alibaba'],
+## ** Hobbyists ----
+
+prop_hobbyists = prop_plot(
+  hobbyists,
   prop = 'both', measure = 'events',
   bad_dates = bad_dates, 
-  # treat_date2 = 10,
   title = NULL,
-  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
+  scales = 'free_y', 
+  ncol = 2, 
+  labeller = labeller(.multi_line=FALSE)
   ),
-prop_baba_ggsave = ggsave(
-  here('figs/prop-baba.pdf'), 
-  plot = prop_baba,
-  width = 8, height = 5, device = cairo_pdf
+prop_hobbyists_ggsave = ggsave(
+  here('figs/prop-hobbyists.pdf'), 
+  plot = prop_hobbyists,
+  width = 8, height = 6.4, device = cairo_pdf
   ),
 
-## UK AlphaGov
-prop_agov = prop_plot(
-  merge(agov, lockdown_dates, by = 'location')[
-    , location := 'UK government digital service'],
-  prop = 'both', measure = 'events',
-  bad_dates = bad_dates, 
-  treat_date2 = isoweek(as.IDate(c('2020-06-01', '2020-06-15', '2020-06-23'))), 
-  title = NULL,
-  scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
-  ),
-prop_agov_ggsave = ggsave(
-  here('figs/prop-agov.pdf'), 
-  plot = prop_agov,
-  width = 8, height = 5, device = cairo_pdf
-  ),
 
 # Event-study regressions -------------------------------------------------
 
@@ -672,7 +778,7 @@ gender_prop = collapse_prop(
   # prop = 'ohrs',
   measure = 'both',
   bad_dates = setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage
-  min_year = 2017,
+  # min_year = 2017,
   by_gender = TRUE,
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
   )[, lockdown_global := 10 ## We'll actually use the 'Global' week 10 date as the common lockdown treatment
@@ -711,8 +817,8 @@ es_gender_plot = ggiplot(
   facet_args = list(labeller = labeller(.multi_line=FALSE)),
   theme = theme_es
   ) +
-scale_color_discrete_qualitative(palette = "Harmonic", aesthetics = c('colour', 'fill')) +
-labs(caption = 'Note: "Out-of-hours" defined as the period outside of 9 am to 6 pm.'),
+  scale_color_discrete_qualitative(palette = "Harmonic", aesthetics = c('colour', 'fill')) +
+  labs(caption = 'Note: "Out-of-hours" defined as the period outside of 9 am to 6 pm.'),
 es_gender_plot_save = ggsave(
   here('figs/es-gender-events.pdf'), 
   plot = es_gender_plot,
@@ -723,7 +829,7 @@ es_gender_plot_save = ggsave(
 # * Extra regs ------------------------------------------------------------
 
 g_prop = collapse_prop(
-  merge(g, lockdown_dates),
+  merge(g[year(date)<=2020], lockdown_dates),
   prop = 'wend',
   bad_dates = setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
@@ -744,7 +850,7 @@ cities_prop = collapse_prop(
                                                       default = 'us')],
   measure = 'both',
   bad_dates =  setdiff(bad_dates, as.IDate('2020-06-10')), ## Latter was only a minor outage, 
-  min_year = 2017,
+  # min_year = 2017,
   treatment_window = -10:20 ## Event-study running from 10 weeks before lockdown 'til 20 weeks after
   ) %>%
   .[, lockdown_global := 10] %>% ## We'll actually use the 'Global' week 10 date as the common lockdown treatment 
@@ -771,7 +877,7 @@ es_cities_wend = feols(
 es_cities_ohrs = feols(
   events ~ i(time_to_treatment, treated, -1) +
     hols_wk + hols_wend + bdates_wk + bdates_wend | 
-    location + yr + time_to_treatment_global, 
+    location + yr + time_to_treatment, 
   cities_prop[prop=='Out-of-hours'],
   vcov = ~location^yr,
   fsplit = ~location
@@ -780,24 +886,24 @@ es_cities_ohrs = feols(
 ## ** Export tabs ----
 etable_wend = etable(
     es_global, es_cities_wend, 
-    dict = c(treated = "2020", time_to_treatment = "Lockdown",
+    dict = c(treated = "Treated", time_to_treatment = "Lockdown",
              events = "Events", yr = "Year", location = "Location"),
     drop = "[[:digit:]]{2}$|bdates|hols", 
     headers = list("^:_:Location" = c("Global", "Cities (all)", tail(names(es_cities_wend), -1))),
     se.row = FALSE,
-    notes = c("Clustered standard errors (by location--year) in parentheses."),
+    notes = c("Clustered standard errors by location--year in parentheses."),
     style.tex = style.tex(main = "aer"),
     file = "tabs/es-wend.tex", replace = TRUE
     ),
 
 etable_ohrs = etable(
     es_cities_ohrs, 
-    dict = c(treated = "2020", time_to_treatment = "Lockdown",
+    dict = c(treated = "Treated", time_to_treatment = "Lockdown",
              events = "Events", yr = "Year", location = "Location"),
     drop = "[[:digit:]]{2}$|bdates|hols", 
     headers = list("^:_:Location" = c("Cities (all)", tail(names(es_cities_wend), -1))),
     se.row = FALSE,
-    notes = c("Clustered standard errors (by location--year) in parentheses."),
+    notes = c("Clustered standard errors by location--year in parentheses."),
     style.tex = style.tex(main = "aer"),
     file = "tabs/es-ohrs.tex", replace = TRUE
     ),
@@ -839,10 +945,19 @@ hols =
 
 prophet_co = rbindlist(lapply(
   split(countries_hi, countries_hi$country_code), 
-  function(x) prophet_fc(x, holidays = hols, level = 0.9, 
-                         outliers = c('2020-06-10', '2019-09-12', 
-                                      '2020-01-24', ## Only KR but enough of a pain that will remove for all
-                                      '2019-12-23', '2019-12-30', '2018-12-30'))
+  function(x) prophet_fc(
+    x, 
+    holidays = hols,
+    train_cutoff = '2020-01-31', # One month into 2020 as anchor
+    n.changepoints = 37, # One (potential) changepoint per month
+    seasonality.mode = 'multiplicative',
+    outliers = c(
+      '2020-06-10', '2019-09-12',
+      '2020-01-24', ## Only KR but enough of a pain that will remove for all
+      '2019-12-23', '2019-12-30', '2018-12-30'
+      ),
+    level = 0.9
+    )
   )),
 write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst')),
 
@@ -851,7 +966,7 @@ write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst')),
 
 ## Difference trends (default)
 prophet_co_plot = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01'
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01'
   ),
 prophet_co_plot_ggsave = ggsave(
   here('figs/prophet-countries.pdf'), 
@@ -868,7 +983,7 @@ prophet_co_plot_placebo_ggsave = ggsave(
   ),
 ## Difference percentage
 prophet_co_plot_perc = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01',
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01',
   type = 'diffperc'
 ),
 prophet_co_plot_perc_ggsave = ggsave(
@@ -878,7 +993,7 @@ prophet_co_plot_perc_ggsave = ggsave(
 ),
 ## Raw trends
 prophet_co_plot_raw = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-01-01',
+  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01',
   type = 'raw'
   ),
 prophet_co_plot_raw_ggsave = ggsave(
@@ -887,7 +1002,7 @@ prophet_co_plot_raw_ggsave = ggsave(
   width = 16, height = 9, device = cairo_pdf
   ),
 prophet_co_plot_raw_placebo = prophet_plot(
-  prophet_co[ds>='2018-09-01' & ds<='2019-06-30'], #forecast = '2020-01-01'
+  prophet_co[ds>='2018-09-01' & ds<='2019-06-30'], #forecast = '2020-02-01'
   type = 'raw'
   ),
 prophet_co_plot_raw_placebo_ggsave = ggsave(
