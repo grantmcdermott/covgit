@@ -1038,7 +1038,7 @@ acs_wfh_plot =
 
 acs_wfh_plot_ggsave = ggsave(
   here('figs/acs-wfh.pdf'), 
-  plot = prophet_co_plot_raw_placebo,
+  plot = acs_wfh_plot,
   width = 8, height = 5, device = cairo_pdf
 )
 
