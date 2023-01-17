@@ -3,7 +3,7 @@
 library(drake)
 library(visNetwork)
 library(bigrquery)
-library(stringr)
+library(stringi)
 library(glue)
 library(fst)
 library(fixest)

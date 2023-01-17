@@ -338,7 +338,7 @@ get_gh_activity =
     
     ## Which event types are we tracking? Default is all...
     if (!is.null(event_type)) {
-      event_type = paste0(stringr::str_to_title(event_type), 'Event')
+      event_type = paste0(stringi::stri_trans_totitle(event_type), 'Event')
       ## Add in combined WHERE clause
       events_query = 
         glue::glue_sql(
@@ -990,7 +990,7 @@ prop_plot =
     ## Facet vars
     facet_vars = vars(location)
     if (prop=='both') facet_vars = c(facet_vars, vars(prop))
-    if (length(mcols)==2) facet_vars = c(facet_vars, vars(stringr::str_to_title(variable)))
+    if (length(mcols)==2) facet_vars = c(facet_vars, vars(stringi::stri_trans_totitle(variable)))
     if (by_age) facet_vars = c(facet_vars, vars(age))
     if (by_gender) facet_vars = c(facet_vars, vars(gender))
     
