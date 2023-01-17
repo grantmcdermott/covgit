@@ -1009,8 +1009,38 @@ prophet_co_plot_raw_placebo_ggsave = ggsave(
   here('figs/prophet-countries-raw-placebo.pdf'), 
   plot = prophet_co_plot_raw_placebo,
   width = 16, height = 9, device = cairo_pdf
-  )
+  ),
 
+
+# ACS ---------------------------------------------------------------------
+
+acs_wfh = fread(here("data/acs-wfh.csv"))[
+  , tech := factor(tech, levels = c("Tech", "Non-tech"))],
+
+acs_wfh20 = acs_wfh[(wfh)][yr %in% c(2019, 2021)][
+  , .(yr = mean(yr), prop = mean(prop)), by = tech],
+
+acs_wfh_plot = 
+  ggplot(acs_wfh[(wfh)], aes(yr, prop, lty = tech, shape = tech)) +
+  geom_line() + 
+  geom_point() +
+  geom_point(data = acs_wfh20, col = "white", shape = 15) +
+  scale_y_continuous(
+    name = "WFH",
+    limits = c(0, 1),
+    labels = scales::percent
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    axis.title.x = element_blank()
+  ),
+
+acs_wfh_plot_ggsave = ggsave(
+  here('figs/acs-wfh.pdf'), 
+  plot = prophet_co_plot_raw_placebo,
+  width = 8, height = 5, device = cairo_pdf
+)
 
 
 )
