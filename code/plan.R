@@ -917,9 +917,8 @@ etable_ohrs = etable(
 ## https://github.com/facebook/prophet/issues/1157#issuecomment-539229937
 ## The date field must also be called "ds".
 
-bad_dates_hols = CJ(ds = sort(c(bad_dates, as.IDate('2018-04-04'))), 
-                    holiday  = 'GitHub down',
-                    country_code = unique(countries_hi$country_code)),
+
+    ,
 
 hols = 
   rbind(
@@ -965,25 +964,25 @@ write_prophet_co = write_fst(prophet_co, here('data/prophet-countries.fst')),
 ## *** Plots ----
 
 ## Difference trends (default)
-prophet_co_plot = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01'
-  ),
-prophet_co_plot_ggsave = ggsave(
-  here('figs/prophet-countries.pdf'), 
-  plot = prophet_co_plot,
-  width = 16, height = 9, device = cairo_pdf
-  ),
-prophet_co_plot_placebo = prophet_plot(
-  prophet_co[ds>='2018-09-01' & ds<='2019-06-30']#, forecast = '2020-01-01'
-  ),
-prophet_co_plot_placebo_ggsave = ggsave(
-  here('figs/prophet-countries-placebo.pdf'), 
-  plot = prophet_co_plot_placebo,
-  width = 16, height = 9, device = cairo_pdf
-  ),
+# prophet_co_plot = prophet_plot(
+#   prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01'
+#   ),
+# prophet_co_plot_ggsave = ggsave(
+#   here('figs/prophet-countries.pdf'), 
+#   plot = prophet_co_plot,
+#   width = 16, height = 9, device = cairo_pdf
+#   ),
+# prophet_co_plot_placebo = prophet_plot(
+#   prophet_co[ds>='2018-09-01' & ds<='2019-06-30']#, forecast = '2020-01-01'
+#   ),
+# prophet_co_plot_placebo_ggsave = ggsave(
+#   here('figs/prophet-countries-placebo.pdf'), 
+#   plot = prophet_co_plot_placebo,
+#   width = 16, height = 9, device = cairo_pdf
+#   ),
 ## Difference percentage
 prophet_co_plot_perc = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01',
+  prophet_co[ds>='2019-09-01' & ds<='2020-07-30'], forecast = '2020-02-01',
   type = 'diffperc'
 ),
 prophet_co_plot_perc_ggsave = ggsave(
@@ -991,25 +990,34 @@ prophet_co_plot_perc_ggsave = ggsave(
   plot = prophet_co_plot_perc,
   width = 16, height = 9, device = cairo_pdf
 ),
-## Raw trends
-prophet_co_plot_raw = prophet_plot(
-  prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01',
-  type = 'raw'
-  ),
-prophet_co_plot_raw_ggsave = ggsave(
-  here('figs/prophet-countries-raw.pdf'), 
-  plot = prophet_co_plot_raw,
+prophet_co_plot_perc_placebo = prophet_plot(
+  prophet_co[ds>='2018-09-01' & ds<='2019-07-30'],
+  type = 'diffperc'
+),
+prophet_co_plot_perc_placebo_ggsave = ggsave(
+  here('figs/prophet-countries-perc-placebo.pdf'), 
+  plot = prophet_co_plot_perc_placebo,
   width = 16, height = 9, device = cairo_pdf
-  ),
-prophet_co_plot_raw_placebo = prophet_plot(
-  prophet_co[ds>='2018-09-01' & ds<='2019-06-30'], #forecast = '2020-02-01'
-  type = 'raw'
-  ),
-prophet_co_plot_raw_placebo_ggsave = ggsave(
-  here('figs/prophet-countries-raw-placebo.pdf'), 
-  plot = prophet_co_plot_raw_placebo,
-  width = 16, height = 9, device = cairo_pdf
-  ),
+),
+# ## Raw trends
+# prophet_co_plot_raw = prophet_plot(
+#   prophet_co[ds>='2019-09-01' & ds<='2020-06-30'], forecast = '2020-02-01',
+#   type = 'raw'
+#   ),
+# prophet_co_plot_raw_ggsave = ggsave(
+#   here('figs/prophet-countries-raw.pdf'), 
+#   plot = prophet_co_plot_raw,
+#   width = 16, height = 9, device = cairo_pdf
+#   ),
+# prophet_co_plot_raw_placebo = prophet_plot(
+#   prophet_co[ds>='2018-09-01' & ds<='2019-06-30'], #forecast = '2020-02-01'
+#   type = 'raw'
+#   ),
+# prophet_co_plot_raw_placebo_ggsave = ggsave(
+#   here('figs/prophet-countries-raw-placebo.pdf'), 
+#   plot = prophet_co_plot_raw_placebo,
+#   width = 16, height = 9, device = cairo_pdf
+#   ),
 
 
 # ACS ---------------------------------------------------------------------
