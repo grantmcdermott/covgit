@@ -37,6 +37,43 @@ theme_es =
         strip.text = element_text(colour = "black", size = 11))
 
 
+# Date load funcs --------------------------------------------------------
+
+get_lockdown_dates = function(lockdown_file) {
+  fread(here(lockdown_file))[, .SD[1], by = location]
+}
+
+get_bad_dates = function() {
+  as.IDate(c(
+    '2015-02-01',
+    '2016-02-01',
+    '2016-05-01',
+    '2018-04-03',
+    '2019-09-12',
+    '2020-06-10',
+    '2020-08-21',
+    '2021-03-09', '2021-03-10',
+    '2021-05-07', '2021-05-08', '2021-05-09', '2021-05-10', '2021-05-11',
+    '2021-08-26', '2021-08-27'
+  ))
+}
+
+get_holidays = function(holidays_files) {
+  rbindlist(lapply(
+    list.files(holidays_files, full.names = TRUE),
+    function(f) fread(f)[
+      ,
+      first(.SD), by = date
+    ][
+      ,
+      country_code := gsub("\\.csv$", "", gsub(".*holidays_", "", f))
+    ][
+      ,
+      .(date, holiday = name, country_code)
+    ]
+  ))
+  }
+
 # Buffer dates ------------------------------------------------------------
 
 
@@ -749,7 +786,7 @@ gender_prep = function(data) {
                             location=='Bengaluru', 'in', 
                             location=='London',    'gb', 
                             default =              'us')]
-  d = d[ignore(gender)!=3]
+  d = d[gender!=3]
   d$gender = factor(d$gender, labels = c('0' = 'Female', '1' = 'Male'))
   return(d)
 }
@@ -936,7 +973,7 @@ prop_plot =
     highlight_year = paste0(highlight_year)
     if (is.null(highlight_col)) highlight_col = '#E16A86'
     if (length(highlight_col)!=length(highlight_year)) {
-      highlight_col = lighten(highlight_col, .5/length(highlight_year)*c(1,-1))
+      highlight_col = lighten(highlight_col, (1/length(highlight_year))/length(highlight_year)* seq(1, -1, length.out = 3))
     }
     
     col_vals = highlight_col
@@ -1020,7 +1057,7 @@ prop_plot =
     }
     
     data %>% 
-      ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, lwd = col_grp)) + 
+      ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, linewidth = col_grp)) +
       geom_line() + 
       geom_line(data = data_nhy_mean) +
       geom_line(data = data[yr %in% highlight_year]) +
@@ -1039,7 +1076,8 @@ prop_plot =
       labs(x = 'Week of year', y = ylab, title = title, caption = caption) +
       scale_y_percent(limits = ylim) +
       scale_colour_manual(values = col_vals) +
-      scale_size_manual(values = lwd_vals) +
+      # scale_size_manual(values = lwd_vals) +
+      scale_discrete_manual("linewidth", values = lwd_vals) +
       facet_wrap(facet_vars, scales = scales, ncol = ncol, labeller = labeller) +
       {
         if (!is.null(ylim)) {
@@ -1218,3 +1256,36 @@ hourly_plot =
             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.spacing = unit(0.5, "char"))
   }
+
+
+# ACS ---------------------------------------------------------------------
+
+read_acs_wfh  = function(acs_csv) {
+  fread(here(acs_csv))[
+    ,
+    tech := factor(tech, levels = c("Tech", "Non-tech"))
+  ]
+}
+
+plot_acs_wfh = function(acs_wfh_dat) {
+  
+  # need to impute missing 2020 data for line trend
+  acs_wfh20 = acs_wfh_dat[(wfh)][yr %in% c(2019, 2021)][
+    , .(yr = mean(yr), prop = mean(prop)), by = tech]
+  
+  ggplot(acs_wfh_dat[(wfh)], aes(yr, prop, lty = tech, shape = tech)) +
+    geom_line() +
+    geom_point() +
+    geom_point(data = acs_wfh20, col = "white", shape = 15) +
+    scale_y_continuous(
+      name = "WFH",
+      limits = c(0, 1),
+      labels = scales::percent
+    ) +
+    theme_ipsum_rc() +
+    theme(
+      legend.position = "bottom",
+      legend.title = element_blank(),
+      axis.title.x = element_blank()
+    )
+}
