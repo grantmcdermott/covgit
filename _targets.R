@@ -1,6 +1,7 @@
 # Libraries ---------------------------------------------------------------
 
 library(targets)
+library(visNetwork)
 
 # Set target options:
 tar_option_set(
