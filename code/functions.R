@@ -973,7 +973,7 @@ prop_plot =
     highlight_year = paste0(highlight_year)
     if (is.null(highlight_col)) highlight_col = '#E16A86'
     if (length(highlight_col)!=length(highlight_year)) {
-      highlight_col = lighten(highlight_col, (1/length(highlight_year))/length(highlight_year)* seq(1, -1, length.out = 3))
+      highlight_col = lighten(highlight_col, (1/length(highlight_year))/length(highlight_year)* seq(1, -1, length.out = length(highlight_year)))
     }
     
     col_vals = highlight_col
