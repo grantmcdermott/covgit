@@ -22,6 +22,7 @@ library(bigrquery)
 library(stringi)
 library(glue)
 # library(fst)
+library(qs)
 library(fixest)
 library(prophet)
 library(data.table)
@@ -66,7 +67,7 @@ list(
   tar_target(
     g,
     rbindlist(lapply(
-      2015:2022, function(y) {
+      2015:2023, function(y) {
         get_gh_activity_year(billing = billing, year = y)
         }
       ))[
@@ -79,7 +80,7 @@ list(
   tar_target(
     gpush,
     rbindlist(lapply(
-      2015:2022, function(y) {
+      2015:2023, function(y) {
         get_gh_activity_year(billing = billing, year = y, event_type = 'Push')
         }
     ))[
