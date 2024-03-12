@@ -670,7 +670,7 @@ list(
       merge(g, lockdown_dates),
       prop = 'wend', measure = 'both',
       bad_dates = bad_dates,
-      highlight_year = 2020:2022,
+      highlight_year = 2020:2023,
       treat_date2 = 10, ## Global treatment date
       ylim = c(0.15, 0.25),
       scales = 'free_y',
@@ -686,9 +686,11 @@ list(
   tar_target(
     prop_global_wend_events,
     prop_plot(
-      merge(g[year(date)<2021], lockdown_dates), ## For main text we exclude 2021+ data
+      # merge(g[year(date)<2021], lockdown_dates), ## For main text we exclude 2021+ data
+      merge(g, lockdown_dates),
       prop = 'wend', measure = 'events',
       bad_dates = bad_dates,
+      highlight_year = 2020:2023,
       treat_date2 = 10, ## Global treatment date
       ylim = c(0.15, 0.25),
       title = NULL, facet_title = NULL,
@@ -701,20 +703,20 @@ list(
   #   plot = prop_global_wend_events,
   #   width = 8, height = 5, device = cairo_pdf
   # ),
-  tar_target(
-    prop_global_wend_events21,
-    prop_plot(
-      merge(g, lockdown_dates), 
-      prop = 'wend', measure = 'events',
-      bad_dates = bad_dates,
-      highlight_year = 2020:2022,
-      treat_date2 = 10, ## Global treatment date
-      ylim = c(0.15, 0.25),
-      title = NULL, facet_title = NULL,
-      scales = 'free_y',
-      labeller = labeller(.multi_line=FALSE)
-    )
-  ),
+  # tar_target(
+  #   prop_global_wend_events21,
+  #   prop_plot(
+  #     merge(g, lockdown_dates), 
+  #     prop = 'wend', measure = 'events',
+  #     bad_dates = bad_dates,
+  #     highlight_year = 2020:2022,
+  #     treat_date2 = 10, ## Global treatment date
+  #     ylim = c(0.15, 0.25),
+  #     title = NULL, facet_title = NULL,
+  #     scales = 'free_y',
+  #     labeller = labeller(.multi_line=FALSE)
+  #   )
+  # ),
   # prop_global_wend_events21_ggsave = ggsave(
   #   here('figs/prop-global-wend-events21.pdf'), 
   #   plot = prop_global_wend_events21,
@@ -724,10 +726,12 @@ list(
   tar_target(
     prop_global_wend_pushes,
     prop_plot(
-      merge(gpush[year(date)<2021], lockdown_dates),
+      # merge(gpush[year(date)<2021], lockdown_dates),
+      merge(gpush, lockdown_dates),
       prop = 'wend', measure = 'events',
       bad_dates = bad_dates,
       treat_date2 = 10, ## Global treatment date
+      highlight_year = 2020:2023,
       # ylim = c(0.15, 0.25),
       title = NULL, facet_title = NULL,
       scales = 'free_y',

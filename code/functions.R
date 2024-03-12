@@ -971,15 +971,15 @@ prop_plot =
     
     if (is.null(highlight_year)) highlight_year = 2020
     highlight_year = paste0(highlight_year)
-    if (is.null(highlight_col)) highlight_col = '#E16A86'
-    if (length(highlight_col)!=length(highlight_year)) {
-      highlight_col = lighten(highlight_col, (1/length(highlight_year))/length(highlight_year)* seq(1, -1, length.out = length(highlight_year)))
-    }
+    # if (is.null(highlight_col)) highlight_col = '#E16A86'
+    # if (length(highlight_col)!=length(highlight_year)) {
+    #   highlight_col = lighten(highlight_col, (1/length(highlight_year))/length(highlight_year)* seq(1, -1, length.out = length(highlight_year)))
+    # }
     
-    col_vals = highlight_col
-    names(col_vals) = highlight_year
-    col_vals = c('Recent years' = '#A4DDEF', 'Recent mean' = '#00A6CA', col_vals)
-    lwd_vals = c(0.4, 0.7, rep(0.7, length(highlight_year))); names(lwd_vals) = names(col_vals)
+    # col_vals = rep(highlight_col, length(highlight_year))
+    # names(col_vals) = highlight_year
+    # col_vals = c('Pre-COVID year' = '#A4DDEF', 'Pre-COVID mean' = '#00A6CA', col_vals)
+    # lwd_vals = c(0.4, 0.7, rep(0.7, length(highlight_year))); names(lwd_vals) = names(col_vals)
     
     gvars = c('location', 'prop', 'yr', 'wk')
     if (by_gender) gvars = c(gvars, 'gender')
@@ -992,12 +992,17 @@ prop_plot =
     
     data = melt(data, measure = mcols)
     
-    data_nhy_mean = data[yr %ni% highlight_year,
-                         .(value = mean(value), yr = first(yr)), 
-                         by = setdiff(c(gvars, 'variable'), 'yr')]
+    # data_nhy_mean = data[yr %ni% highlight_year,
+    #                      .(value = mean(value), yr = first(yr)), 
+    #                      by = setdiff(c(gvars, 'variable'), 'yr')]
     
-    data[, col_grp := fifelse(yr %in% highlight_year, paste(yr), 'Recent years')]
-    data_nhy_mean[, col_grp := 'Recent mean']
+    data[, col_grp := factor(fifelse(yr %in% highlight_year, 'Post-COVID', 'Pre-COVID'), levels = c('Pre-COVID', 'Post-COVID'))]
+    # data_nhy_mean[, col_grp := 'Pre-COVID mean']
+    data_mean = data[
+      ,
+      .(value = mean(value, na.rm = TRUE)),
+      by = setdiff(c(gvars, 'variable', 'col_grp'), 'yr')
+    ]
     
     title_auto = title ## for title adjustment along with facet vars below
     if (is.null(title) || title=='auto') {
@@ -1057,10 +1062,13 @@ prop_plot =
     }
     
     data %>% 
-      ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, linewidth = col_grp)) +
-      geom_line() + 
-      geom_line(data = data_nhy_mean) +
-      geom_line(data = data[yr %in% highlight_year]) +
+      # ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, linewidth = col_grp)) +
+      # geom_line() + 
+      # geom_line(data = data_nhy_mean) +
+      # geom_line(data = data[yr %in% highlight_year]) +
+      ggplot(aes(wk, value, col = col_grp)) +
+      geom_line(lwd = 0.4, alpha = .6, aes(group = as.factor(yr))) + 
+      geom_line(data = data_mean, lwd = 0.8) +
       {
         if (!is.null(treat_date)) {
           geom_vline(xintercept = treat_date, col = 'grey50', lty = 2) 
@@ -1075,9 +1083,9 @@ prop_plot =
       } +
       labs(x = 'Week of year', y = ylab, title = title, caption = caption) +
       scale_y_percent(limits = ylim) +
-      scale_colour_manual(values = col_vals) +
-      # scale_size_manual(values = lwd_vals) +
-      scale_discrete_manual("linewidth", values = lwd_vals) +
+      scale_colour_manual(values = c('Post-COVID' = '#E16A86', 'Pre-COVID'= '#00A6CA')) +
+      # # scale_size_manual(values = lwd_vals) +
+      # scale_discrete_manual("linewidth", values = lwd_vals) +
       facet_wrap(facet_vars, scales = scales, ncol = ncol, labeller = labeller) +
       {
         if (!is.null(ylim)) {
