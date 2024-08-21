@@ -692,7 +692,7 @@ list(
       bad_dates = bad_dates,
       highlight_year = 2020:2023,
       treat_date2 = 10, ## Global treatment date
-      ylim = c(0.15, 0.25),
+      ylim = c(0.15, 0.26),
       title = NULL, facet_title = NULL,
       scales = 'free_y',
       labeller = labeller(.multi_line=FALSE)
