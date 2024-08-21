@@ -557,14 +557,14 @@ list(
   # * Activity map ----------------------------------------------------------
   
   tar_target(activity_map_plot, activity_map(countries)),
-  tar_target(
-    activity_map_plot_ggsave,
-    ggsave(
-      here('figs/activity-map.pdf'),
-      plot = tar_read(activity_map_plot),
-      width = 8, height = 5, device = cairo_pdf
-    )
-  ),
+  # tar_target(
+  #   activity_map_plot_ggsave,
+  #   ggsave(
+  #     here('figs/activity-map.pdf'),
+  #     plot = tar_read(activity_map_plot),
+  #     width = 8, height = 5, device = cairo_pdf
+  #   )
+  # ),
   
   
   
@@ -572,8 +572,18 @@ list(
   
   # ** Global ----
   tar_target(ts_global_events, ts_plot(g, bad_dates = bad_dates, measure = 'events')),
+  ts_global_events_ggsave = ggsave(
+    here('figs/ts-global-events.pdf'),
+    plot = tar_read(ts_global_events),
+    width = 8, height = 5, device = cairo_pdf
+  ),
   
   tar_target(ts_global_users, ts_plot(g, bad_dates = bad_dates, measure = 'users')),
+  ts_global_users_ggsave = ggsave(
+    here('figs/ts-global-users.pdf'),
+    plot = tar_read(ts_global_users),
+    width = 8, height = 5, device = cairo_pdf
+  ),
   
   # ** Highlighted countries ----
   # Note: We'll limit these to 2019-2020 and break them up into separate plots to 
@@ -590,6 +600,11 @@ list(
       theme = 'void'
     )
   ),
+  ts_countries_events_2_ggsave = ggsave(
+    here('figs/ts-countries-events-1.pdf'), 
+    plot = tar_read(ts_countries_events_1),
+    width = 8, height = 10, device = cairo_pdf
+  ),
   tar_target(
     ts_countries_events_2,
       ts_plot(
@@ -600,6 +615,11 @@ list(
       lockdown_dates = as.IDate(c('2020-02-10', '2020-03-02')),
       theme = 'void'
     )
+  ),
+  ts_countries_events_2_ggsave = ggsave(
+    here('figs/ts-countries-events-2.pdf'), 
+    plot = tar_read(ts_countries_events_2),
+    width = 8, height = 10, device = cairo_pdf
   ),
   ## Productivity
   tar_target(
@@ -614,6 +634,11 @@ list(
       theme = 'void'
     )
   ),
+  ts_countries_productivity_1_ggsave = ggsave(
+    here('figs/ts-countries-productivity-1.pdf'), 
+    plot = tar_read(ts_countries_productivity_1),
+    width = 8, height = 10, device = cairo_pdf
+  ),
   tar_target(
     ts_countries_productivity_2,
     ts_plot(
@@ -625,6 +650,11 @@ list(
       lockdown_dates = as.IDate(c('2020-02-10', '2020-03-02')),
       theme = 'void'
     )
+  ),
+  ts_countries_productivity_2_ggsave = ggsave(
+    here('figs/ts-countries-productivity-2.pdf'), 
+    plot = tar_read(ts_countries_productivity_2),
+    width = 8, height = 10, device = cairo_pdf
   ),
   
   # * Hourly plots (cities) -------------------------------------------------
