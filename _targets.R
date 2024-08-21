@@ -557,14 +557,14 @@ list(
   # * Activity map ----------------------------------------------------------
   
   tar_target(activity_map_plot, activity_map(countries)),
-  # tar_target(
-  #   activity_map_plot_ggsave,
-  #   ggsave(
-  #     here('figs/activity-map.pdf'),
-  #     plot = activity_map_plot,
-  #     width = 8, height = 5, device = cairo_pdf
-  #   )
-  # ),
+  tar_target(
+    activity_map_plot_ggsave,
+    ggsave(
+      here('figs/activity-map.pdf'),
+      plot = tar_read(activity_map_plot),
+      width = 8, height = 5, device = cairo_pdf
+    )
+  ),
   
   
   
@@ -630,34 +630,34 @@ list(
   # * Hourly plots (cities) -------------------------------------------------
   
   tar_target(hourly_plot_lon, hourly_plot(cities[location=="London"])),
-  # hourly_plot_lon_ggsave = ggsave(here("figs/hourly-lon.pdf"),
-  #                                 plot = hourly_plot_lon,
-  #                                 width = 8, height = 5, device = cairo_pdf),
+  hourly_plot_lon_ggsave = ggsave(here("figs/hourly-lon.pdf"),
+                                  plot = tar_read(hourly_plot_lon),
+                                  width = 8, height = 5, device = cairo_pdf),
   
   tar_target(hourly_plot_nyc, hourly_plot(cities[location=="New York, NY"])),
-  # hourly_plot_nyc_ggsave = ggsave(here("figs/hourly-nyc.pdf"),
-  #                                 plot = hourly_plot_nyc,
-  #                                 width = 8, height = 5, device = cairo_pdf),
+  hourly_plot_nyc_ggsave = ggsave(here("figs/hourly-nyc.pdf"),
+                                  plot = tar_read(hourly_plot_nyc),
+                                  width = 8, height = 5, device = cairo_pdf),
   
   tar_target(hourly_plot_sfo, hourly_plot(cities[location=="San Francisco, CA"])),
-  # hourly_plot_sfo_ggsave = ggsave(here("figs/hourly-sfo.pdf"),
-  #                                 plot = hourly_plot_sfo,
-  #                                 width = 8, height = 5, device = cairo_pdf),
+  hourly_plot_sfo_ggsave = ggsave(here("figs/hourly-sfo.pdf"),
+                                  plot = tar_read(hourly_plot_sfo),
+                                  width = 8, height = 5, device = cairo_pdf),
   
   tar_target(hourly_plot_bei, hourly_plot(cities[location=="Beijing"])),
-  # hourly_plot_bei_ggsave = ggsave(here("figs/hourly-bei.pdf"),
-  #                                 plot = hourly_plot_bei,
-  #                                 width = 8, height = 5, device = cairo_pdf),
+  hourly_plot_bei_ggsave = ggsave(here("figs/hourly-bei.pdf"),
+                                  plot = tar_read(hourly_plot_bei),
+                                  width = 8, height = 5, device = cairo_pdf),
   
   tar_target(hourly_plot_blr, hourly_plot(cities[location=="Bengaluru"])),
-  # hourly_plot_blr_ggsave = ggsave(here("figs/hourly-blr.pdf"),
-  #                                 plot = hourly_plot_blr,
-  #                                 width = 8, height = 5, device = cairo_pdf),
+  hourly_plot_blr_ggsave = ggsave(here("figs/hourly-blr.pdf"),
+                                  plot = tar_read(hourly_plot_blr),
+                                  width = 8, height = 5, device = cairo_pdf),
   
   tar_target(hourly_plot_sea, hourly_plot(cities[location=="Seattle, WA"])),
-  # hourly_plot_sea_ggsave = ggsave(here("figs/hourly-sea.pdf"),
-  #                                 plot = hourly_plot_sea,
-  #                                 width = 8, height = 5, device = cairo_pdf),
+  hourly_plot_sea_ggsave = ggsave(here("figs/hourly-sea.pdf"),
+                                  plot = tar_read(hourly_plot_sea),
+                                  width = 8, height = 5, device = cairo_pdf),
   
   
   
@@ -677,11 +677,11 @@ list(
       labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_global_wend_ggsave = ggsave(
-  #   here('figs/prop-global-wend.pdf'), 
-  #   plot = prop_global_wend,
-  #   width = 8, height = 5, device = cairo_pdf
-  # ),
+  prop_global_wend_ggsave = ggsave(
+    here('figs/prop-global-wend.pdf'),
+    plot = tar_read(prop_global_wend),
+    width = 8, height = 5, device = cairo_pdf
+  ),
   ## ** Global (prop = weekends, measure = events) ----
   tar_target(
     prop_global_wend_events,
@@ -692,17 +692,17 @@ list(
       bad_dates = bad_dates,
       highlight_year = 2020:2023,
       treat_date2 = 10, ## Global treatment date
-      ylim = c(0.15, 0.26),
+      ylim = c(0.15, 0.25),
       title = NULL, facet_title = NULL,
       scales = 'free_y',
       labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_global_wend_events_ggsave = ggsave(
-  #   here('figs/prop-global-wend-events.pdf'), 
-  #   plot = prop_global_wend_events,
-  #   width = 8, height = 5, device = cairo_pdf
-  # ),
+  prop_global_wend_events_ggsave = ggsave(
+    here('figs/prop-global-wend-events.pdf'),
+    plot = tar_read(prop_global_wend_events),
+    width = 8, height = 5, device = cairo_pdf
+  ),
   # tar_target(
   #   prop_global_wend_events21,
   #   prop_plot(
@@ -738,11 +738,11 @@ list(
       labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_global_wend_pushes_ggsave = ggsave(
-  #   here('figs/prop-global-wend-pushes.pdf'), 
-  #   plot = prop_global_wend_pushes,
-  #   width = 8, height = 5, device = cairo_pdf
-  # ),
+  prop_global_wend_pushes_ggsave = ggsave(
+    here('figs/prop-global-wend-pushes.pdf'),
+    plot = tar_read(prop_global_wend_pushes),
+    width = 8, height = 5, device = cairo_pdf
+  ),
   
   
   ## ** Cities (prop = both, measure = events) ----
@@ -758,11 +758,11 @@ list(
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_cities_both_events_ggsave = ggsave(
-  #   here('figs/prop-cities-both-events.pdf'), 
-  #   plot = prop_cities_both_events,
-  #   width = 10, height = 8, device = cairo_pdf
-  # ),
+  prop_cities_both_events_ggsave = ggsave(
+    here('figs/prop-cities-both-events.pdf'),
+    plot = tar_read(prop_cities_both_events),
+    width = 10, height = 8, device = cairo_pdf
+  ),
   
   ## ** Gender (prop = wend, measure = events) ----
   tar_target(
@@ -777,11 +777,11 @@ list(
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_gender_wend_events_ggsave = ggsave(
-  #   here('figs/prop-gender-wend-events.pdf'), 
-  #   plot = prop_gender_wend_events,
-  #   width = 10, height = 8, device = cairo_pdf
-  # ),
+  prop_gender_wend_events_ggsave = ggsave(
+    here('figs/prop-gender-wend-events.pdf'),
+    plot = tar_read(prop_gender_wend_events),
+    width = 10, height = 8, device = cairo_pdf
+  ),
   
   ## ** Gender (prop = ohrs, measure = events) ----
   tar_target(
@@ -796,11 +796,11 @@ list(
       scales = 'free_y', ncol = 2, labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_gender_ohrs_events_ggsave = ggsave(
-  #   here('figs/prop-gender-ohrs-events.pdf'), 
-  #   plot = prop_gender_ohrs_events,
-  #   width = 10, height = 8, device = cairo_pdf
-  # ),
+  prop_gender_ohrs_events_ggsave = ggsave(
+    here('figs/prop-gender-ohrs-events.pdf'),
+    plot = tar_read(prop_gender_ohrs_events),
+    width = 10, height = 8, device = cairo_pdf
+  ),
   
   ## ** Orgs ----
   
@@ -816,11 +816,11 @@ list(
       labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_orgs_ggsave = ggsave(
-  #   here('figs/prop-orgs.pdf'), 
-  #   plot = prop_orgs,
-  #   width = 8, height = 6.4, device = cairo_pdf
-  # ),
+  prop_orgs_ggsave = ggsave(
+    here('figs/prop-orgs.pdf'),
+    plot = tar_read(prop_orgs),
+    width = 8, height = 6.4, device = cairo_pdf
+  ),
   
   ## ** Hobbyists ----
   
@@ -836,11 +836,11 @@ list(
       labeller = labeller(.multi_line=FALSE)
     )
   ),
-  # prop_hobbyists_ggsave = ggsave(
-  #   here('figs/prop-hobbyists.pdf'), 
-  #   plot = prop_hobbyists,
-  #   width = 8, height = 6.4, device = cairo_pdf
-  # ),
+  prop_hobbyists_ggsave = ggsave(
+    here('figs/prop-hobbyists.pdf'),
+    plot = tar_read(prop_hobbyists),
+    width = 8, height = 6.4, device = cairo_pdf
+  ),
   
   
   # Event-study regressions -------------------------------------------------
@@ -1095,11 +1095,11 @@ list(
       type = 'diffperc'
     )
   ),
-  # prophet_co_plot_perc_ggsave = ggsave(
-  #   here('figs/prophet-countries-perc.pdf'), 
-  #   plot = prophet_co_plot_perc,
-  #   width = 16, height = 9, device = cairo_pdf
-  # ),
+  prophet_co_plot_perc_ggsave = ggsave(
+    here('figs/prophet-countries-perc.pdf'),
+    plot = tar_read(prophet_co_plot_perc),
+    width = 16, height = 9, device = cairo_pdf
+  ),
   tar_target(
     prophet_co_plot_perc_placebo,
       prophet_plot(
@@ -1107,23 +1107,23 @@ list(
       type = 'diffperc'
     )
   ),
-  # prophet_co_plot_perc_placebo_ggsave = ggsave(
-  #   here('figs/prophet-countries-perc-placebo.pdf'), 
-  #   plot = prophet_co_plot_perc_placebo,
-  #   width = 16, height = 9, device = cairo_pdf
-  # ),
+  prophet_co_plot_perc_placebo_ggsave = ggsave(
+    here('figs/prophet-countries-perc-placebo.pdf'),
+    plot = tar_read(prophet_co_plot_perc_placebo),
+    width = 16, height = 9, device = cairo_pdf
+  ),
   
   
   # ACS ---------------------------------------------------------------------
   
   tar_target(acs_wfh, read_acs_wfh(here("data/acs-wfh.csv"))),
   
-  tar_target(acs_wfh_plot, plot_acs_wfh(acs_wfh))#,
-  # acs_wfh_plot_ggsave = ggsave(
-  #   here('figs/acs-wfh.pdf'), 
-  #   plot = acs_wfh_plot,
-  #   width = 8, height = 5, device = cairo_pdf
-  # )
+  tar_target(acs_wfh_plot, plot_acs_wfh(acs_wfh)),
+  acs_wfh_plot_ggsave = ggsave(
+    here('figs/acs-wfh.pdf'),
+    plot = tar_read(acs_wfh_plot),
+    width = 8, height = 5, device = cairo_pdf
+  )
 
   
 )
