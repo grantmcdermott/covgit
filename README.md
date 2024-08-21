@@ -34,35 +34,27 @@ packages into an **renv** environment.
 
 ### Step 2. Run the analysis
 
-I use [**drake**](https://books.ropensci.org/drake/) to automate the entire 
+I use [**targets**](https://books.ropensci.org/targets/) to automate the entire 
 project build (analysis, etc.). Assuming that you have set up your Google Cloud 
-API key (Step 0) and installed the necessary R packages (Step 1), simply run the 
-`make.R` file at the root of the repo.
-
-You can do this interactively. Or you can source the entire script from within 
-R:
+API key (Step 0) and installed the necessary R packages (Step 1), simply run the
+following R commands at the root of the repo: 
 
 ```r
-source('make.R')
+targets::tar_visnetwork() # optional: vizualise the pipeline DAG
+targets::tar_make()       # run the pipeline
 ```
 
-Or, you can source it directly from the shell:
-
-```sh
-Rscript make.R
-```
-
-(You maybe prompted to authenticate with BigQuery via your browser before it 
+(You might be prompted to authenticate with BigQuery via your browser before it 
 will allow you to download the data.)
 
-Regardless of how you choose to do it, note that running the `make.R` file once
-will cache all of the intermediate targets and objects (e.g. data frames and 
-plots). This is nice because, like standard Make tools, it will only redo the 
-parts of the analysis that is has too. So we won't get billed by BigQuery every
-time we run `make.R` again... although the figure would be minuscule for the 
-small/efficient queries that we are running here. You can pull all of these 
+The full pipeline takes about 20 minutes to run from start to finish on my
+laptop. Most of that time is taken up sending and executing queries on BigQuery.
+(The individual query targets themselves are not that large, so I don't expect
+much variation even across very fast and slow internet connections.) After you
+have run `targets::tar_make()` once, then all intermediate targets and results 
+will be cached for immediate retrieval thereafter. You can pull all of these 
 cached objects into the global environment of a live R session by running:
 
 ```r
-drake::loadd()
+targets::tar_load_everything()
 ```
