@@ -4,7 +4,7 @@ This repository contains code and data for
 [McDermott and Hansen (2021)](https://www.nber.org/papers/w29598).
 
 **Abstract:**
-We study how labour patterns of tech workers have changed in the wake of
+_We study how labour patterns of tech workers have changed in the wake of
 COVID-19. Using real-time activity data from millions of GitHub users around the
 world, we show that the pandemic triggered a sharp pattern of labor
 reallocation. Users have become more active during traditional leisure times,
@@ -12,14 +12,13 @@ and spend several additional hours each week active on during evenings and
 weekends. We show that this behavior has persisted far beyond any local lockdown
 orders and return to work mandates, albeit tempered by regional and user
 heterogeneity. Our results provide new insights into the dynamic labor effects
-of the pandemic and the long-run shift to remote work. To reproduce all of the
-results in the paper, clone this repo and then follow these three steps:
+of the pandemic and the long-run shift to remote work._
 
 ## Replication
 
 The analysis is run entirely in R (4.4.1), but with calls to the Google BigQuery
-via the platform's API. To reproduce all of the results from the paper, please
-follow the below steps.
+via the platform's API. To reproduce all of the results from the paper, simply
+clone this repo and follow the below steps.
 
 ### Step 0: Google Cloud API Credentials
 
