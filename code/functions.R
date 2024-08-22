@@ -37,6 +37,43 @@ theme_es =
         strip.text = element_text(colour = "black", size = 11))
 
 
+# Date load funcs --------------------------------------------------------
+
+get_lockdown_dates = function(lockdown_file) {
+  fread(here(lockdown_file))[, .SD[1], by = location]
+}
+
+get_bad_dates = function() {
+  as.IDate(c(
+    '2015-02-01',
+    '2016-02-01',
+    '2016-05-01',
+    '2018-04-03',
+    '2019-09-12',
+    '2020-06-10',
+    '2020-08-21',
+    '2021-03-09', '2021-03-10',
+    '2021-05-07', '2021-05-08', '2021-05-09', '2021-05-10', '2021-05-11',
+    '2021-08-26', '2021-08-27'
+  ))
+}
+
+get_holidays = function(holidays_files) {
+  rbindlist(lapply(
+    list.files(holidays_files, full.names = TRUE),
+    function(f) fread(f)[
+      ,
+      first(.SD), by = date
+    ][
+      ,
+      country_code := gsub("\\.csv$", "", gsub(".*holidays_", "", f))
+    ][
+      ,
+      .(date, holiday = name, country_code)
+    ]
+  ))
+  }
+
 # Buffer dates ------------------------------------------------------------
 
 
@@ -749,7 +786,7 @@ gender_prep = function(data) {
                             location=='Bengaluru', 'in', 
                             location=='London',    'gb', 
                             default =              'us')]
-  d = d[ignore(gender)!=3]
+  d = d[gender!=3]
   d$gender = factor(d$gender, labels = c('0' = 'Female', '1' = 'Male'))
   return(d)
 }
@@ -934,15 +971,15 @@ prop_plot =
     
     if (is.null(highlight_year)) highlight_year = 2020
     highlight_year = paste0(highlight_year)
-    if (is.null(highlight_col)) highlight_col = '#E16A86'
-    if (length(highlight_col)!=length(highlight_year)) {
-      highlight_col = lighten(highlight_col, .5/length(highlight_year)*c(1,-1))
-    }
+    # if (is.null(highlight_col)) highlight_col = '#E16A86'
+    # if (length(highlight_col)!=length(highlight_year)) {
+    #   highlight_col = lighten(highlight_col, (1/length(highlight_year))/length(highlight_year)* seq(1, -1, length.out = length(highlight_year)))
+    # }
     
-    col_vals = highlight_col
-    names(col_vals) = highlight_year
-    col_vals = c('Recent years' = '#A4DDEF', 'Recent mean' = '#00A6CA', col_vals)
-    lwd_vals = c(0.4, 0.7, rep(0.7, length(highlight_year))); names(lwd_vals) = names(col_vals)
+    # col_vals = rep(highlight_col, length(highlight_year))
+    # names(col_vals) = highlight_year
+    # col_vals = c('Pre-COVID year' = '#A4DDEF', 'Pre-COVID mean' = '#00A6CA', col_vals)
+    # lwd_vals = c(0.4, 0.7, rep(0.7, length(highlight_year))); names(lwd_vals) = names(col_vals)
     
     gvars = c('location', 'prop', 'yr', 'wk')
     if (by_gender) gvars = c(gvars, 'gender')
@@ -955,12 +992,17 @@ prop_plot =
     
     data = melt(data, measure = mcols)
     
-    data_nhy_mean = data[yr %ni% highlight_year,
-                         .(value = mean(value), yr = first(yr)), 
-                         by = setdiff(c(gvars, 'variable'), 'yr')]
+    # data_nhy_mean = data[yr %ni% highlight_year,
+    #                      .(value = mean(value), yr = first(yr)), 
+    #                      by = setdiff(c(gvars, 'variable'), 'yr')]
     
-    data[, col_grp := fifelse(yr %in% highlight_year, paste(yr), 'Recent years')]
-    data_nhy_mean[, col_grp := 'Recent mean']
+    data[, col_grp := factor(fifelse(yr %in% highlight_year, 'Post-COVID', 'Pre-COVID'), levels = c('Pre-COVID', 'Post-COVID'))]
+    # data_nhy_mean[, col_grp := 'Pre-COVID mean']
+    data_mean = data[
+      ,
+      .(value = mean(value, na.rm = TRUE)),
+      by = setdiff(c(gvars, 'variable', 'col_grp'), 'yr')
+    ]
     
     title_auto = title ## for title adjustment along with facet vars below
     if (is.null(title) || title=='auto') {
@@ -1020,10 +1062,13 @@ prop_plot =
     }
     
     data %>% 
-      ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, lwd = col_grp)) + 
-      geom_line() + 
-      geom_line(data = data_nhy_mean) +
-      geom_line(data = data[yr %in% highlight_year]) +
+      # ggplot(aes(wk, value, group = as.factor(yr), col = col_grp, linewidth = col_grp)) +
+      # geom_line() + 
+      # geom_line(data = data_nhy_mean) +
+      # geom_line(data = data[yr %in% highlight_year]) +
+      ggplot(aes(wk, value, col = col_grp)) +
+      geom_line(lwd = 0.4, alpha = .6, aes(group = as.factor(yr))) + 
+      geom_line(data = data_mean, lwd = 0.8) +
       {
         if (!is.null(treat_date)) {
           geom_vline(xintercept = treat_date, col = 'grey50', lty = 2) 
@@ -1038,8 +1083,9 @@ prop_plot =
       } +
       labs(x = 'Week of year', y = ylab, title = title, caption = caption) +
       scale_y_percent(limits = ylim) +
-      scale_colour_manual(values = col_vals) +
-      scale_size_manual(values = lwd_vals) +
+      scale_colour_manual(values = c('Post-COVID' = '#E16A86', 'Pre-COVID'= '#00A6CA')) +
+      # # scale_size_manual(values = lwd_vals) +
+      # scale_discrete_manual("linewidth", values = lwd_vals) +
       facet_wrap(facet_vars, scales = scales, ncol = ncol, labeller = labeller) +
       {
         if (!is.null(ylim)) {
@@ -1218,3 +1264,36 @@ hourly_plot =
             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.spacing = unit(0.5, "char"))
   }
+
+
+# ACS ---------------------------------------------------------------------
+
+read_acs_wfh  = function(acs_csv) {
+  fread(here(acs_csv))[
+    ,
+    tech := factor(tech, levels = c("Tech", "Non-tech"))
+  ]
+}
+
+plot_acs_wfh = function(acs_wfh_dat) {
+  
+  # need to impute missing 2020 data for line trend
+  acs_wfh20 = acs_wfh_dat[(wfh)][yr %in% c(2019, 2021)][
+    , .(yr = mean(yr), prop = mean(prop)), by = tech]
+  
+  ggplot(acs_wfh_dat[(wfh)], aes(yr, prop, lty = tech, shape = tech)) +
+    geom_line() +
+    geom_point() +
+    geom_point(data = acs_wfh20, col = "white", shape = 15) +
+    scale_y_continuous(
+      name = "WFH",
+      limits = c(0, 1),
+      labels = scales::percent
+    ) +
+    theme_ipsum_rc() +
+    theme(
+      legend.position = "bottom",
+      legend.title = element_blank(),
+      axis.title.x = element_blank()
+    )
+}

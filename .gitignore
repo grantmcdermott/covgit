@@ -3,7 +3,7 @@
 .Rhistory
 .RData
 .Ruserdata
-.drake
+_targets/
 TESTING/
 TESTING_OTHER/
 OLD/
